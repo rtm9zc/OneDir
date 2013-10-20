@@ -16,3 +16,4 @@ with open('data\data.txt', 'r+') as data:
         output.write(time)
     data.seek(0)
     data.write(output.getvalue())
+    #saddasd
