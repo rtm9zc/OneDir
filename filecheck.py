@@ -22,3 +22,4 @@ with open('data\data.txt', 'r+') as data: #Database file,
     data.seek(0)
     data.write(output.getvalue())
     
+#test
