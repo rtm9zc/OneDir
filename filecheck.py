@@ -12,14 +12,12 @@ with open('data\data.txt', 'r+') as data: #Database file,
         time = float(timestr[:(timestr.__len__()-1)]) #-1's done in slice to get rid of \n
         newtime = os.path.getmtime(filename[:(filename.__len__()-1)])
         if newtime > time: #updatates if observed file time above recorded
-            time = str(newtime) +'\n'
+            timestr = str(newtime) +'\n'
             #file uploaded to server
         elif newtime < time: #update client side file update if server has newer version
             i = 1
-            #file dow2nloaded to client
+            #file downloaded to client
         output.write(filename) #updating data file
-        output.write(time)
+        output.write(timestr)
     data.seek(0)
     data.write(output.getvalue())
-    
-#test
