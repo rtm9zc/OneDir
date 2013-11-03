@@ -121,7 +121,8 @@ class FileIOProtocol(basic.LineReceiver):
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
 
-        self.outfilename = os.path.join(uploaddir, 'data.out')
+        #self.outfilename = os.path.join(uploaddir, 'data.out')
+        self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
 
         print ' * Receiving into file@',self.outfilename
         try:
