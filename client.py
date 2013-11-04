@@ -6,35 +6,33 @@ from file_transfer import *
 from binascii import crc32
 
 
-class LocalMachine(pb.root):
+class LocalMachine():
 
-    def __init__(self, username, filePath, address='127.0.0.1', port='1234'):
+    def __init__(self, username, filePath, address='localhost', port=1234):
         self.username_ = username
         self.file_path_ = filePath
         self.address_ = address
         self.port_ = port
 
-
     def sendFile(self, fileName):
-        transmitOne(self.file_path_,self.port_,self.address_)
-        reactor.run()
+        # transmitOne(self.file_path_,self.address_,self.port_)
+        # print 'Dialing on port',self.port_,'..'
+        # reactor.run()
+        command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + self.file_path_ + '/' + filename
+        os.system(command)
 
     def getUsername(self):
         return self.username_
 
+    def getAddress(self):
+        return self.address_
 
-# set up as server
+# if __name__=='__main__':
+#     filename = 'testfile.docx'
+#     lm_one = LocalMachine('testUser', '/test_user/machineOne/OneDir', address='localhost', port=1234)
+#     lm_one.sendFile(filename)
 
-fileio = FileIOFactory({})
-reactor.listenTCP(port, fileio)
-print 'Listening on port',port,'..'
-reactor.run()
-
-# if we get watchdog event, call sendFile()
-
-while True:
-    # if watchdog event occurs
-        # call sendFile() method
-
-
-
+if __name__=='__main__':
+    filename = 'testfile.docx'
+    lm_one = LocalMachine('testUser', '~/test_user/machineOne/OneDir', address='localhost', port=1234)
+    lm_one.sendFile(filename)
