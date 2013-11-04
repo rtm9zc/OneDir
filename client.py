@@ -37,18 +37,20 @@ class LocalMachine():
     def getAddress(self):
         return self.address_
 
+    #These will be only called from the OneDirHandler
+    #Will be made
     def moved(self, source, destination):
-        self.sendString("mov " + source + " " + destination)
+        self.sendString(self.username_ + " " + self.address_ + " mov " + source + " " + destination)
         #some shit to listen for a confirming response
     def deleted(self, file):
-        self.sendString("del " + file)
+        self.sendString(self.username_ + " " + self.address_ + " del " + file)
         #some shit to listen for a confirming response
     def modified(self, file):
-        self.sendString("mod " + file)
+        self.sendString(self.username_ + " " + self.address_ + " mod " + file)
         #some shit to listen for a confirming response
         self.sendFile(file)
     def created(self, file):
-        self.sendString("cre " + file)
+        self.sendString(self.username_ + " " + self.address_ + " cre " + file)
         #some shit to listen for a confirming response
         self.sendFile(file)
 
