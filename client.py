@@ -33,10 +33,13 @@ class LocalMachine():
     def getAddress(self):
         return self.address_
 
-class OneDirHandler(FileSystemEventHandler):
+class OneDirHandler(FileSystemEventHandler, ):
     localstring = (str)
     localstring = os.getcwd()
     locallen = localstring.__len__()+1
+    machine = (LocalMachine)
+    def __init__(self, local):
+        machine = local
     def on_moved(self, event):
         #Only really called on name change
         #Should tell server to change name on file (src_path) to (dest_path)
@@ -78,11 +81,12 @@ class OneDirHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
+    lm_one = LocalMachine('testUser', '~/test_user/machineOne/OneDir', address='localhost', port=1234)
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     path = sys.argv[1] if len(sys.argv) > 1 else '.'
-    event_handler = OneDirHandler()
+    event_handler = OneDirHandler(lm_one)
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
