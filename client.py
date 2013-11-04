@@ -25,12 +25,13 @@ class LocalMachine():
         # transmitOne(self.file_path_,self.address_,self.port_)
         # print 'Dialing on port',self.port_,'..'
         # reactor.run()
-        command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + self.file_path_ + '/' + filename
+        command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + self.file_path_ + '/' + fileName
         os.system(command)
 
     def sendString(self, string):
         #some stuff to send a formatted string to the server
-        print(string)
+        print(string) #placeholder so it compiles
+
     def getUsername(self):
         return self.username_
 
@@ -38,7 +39,7 @@ class LocalMachine():
         return self.address_
 
     #These will be only called from the OneDirHandler
-    #Will be made
+    #Will be handled by a listener method on the server
     def moved(self, source, destination):
         self.sendString(self.username_ + " " + self.address_ + " mov " + source + " " + destination)
         #some shit to listen for a confirming response
