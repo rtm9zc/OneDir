@@ -10,6 +10,7 @@ import logging
 import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import thread
 
 
 class LocalMachine():
@@ -27,11 +28,29 @@ class LocalMachine():
         command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + self.file_path_ + '/' + filename
         os.system(command)
 
+    def sendString(self, string):
+        #some stuff to send a formatted string to the server
+        print(string)
     def getUsername(self):
         return self.username_
 
     def getAddress(self):
         return self.address_
+
+    def moved(self, source, destination):
+        self.sendString("mov " + source + " " + destination)
+        #some shit to listen for a confirming response
+    def deleted(self, file):
+        self.sendString("del " + file)
+        #some shit to listen for a confirming response
+    def modified(self, file):
+        self.sendString("mod " + file)
+        #some shit to listen for a confirming response
+        self.sendFile(file)
+    def created(self, file):
+        self.sendString("cre " + file)
+        #some shit to listen for a confirming response
+        self.sendFile(file)
 
 class OneDirHandler(FileSystemEventHandler, ):
     localstring = (str)
@@ -49,6 +68,7 @@ class OneDirHandler(FileSystemEventHandler, ):
             print("File moved! (" + source + " at time: " +
               time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             print("Destination: " + dest)
+            thread.start_new_thread(self.machine.moved(source, dest))
     def on_created(self, event):
         #Called on making new file
         #Should send file over to server
@@ -56,6 +76,7 @@ class OneDirHandler(FileSystemEventHandler, ):
         if (source.find(".git") == -1 and source.find(".idea") == -1):
             print("File created! (" + source + " at time: " +
               time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
+            thread.start_new_thread(self.machine.created(source))
     def on_deleted(self, event):
         #Called on deletion of file/directory
         #Server should delete same file
@@ -63,22 +84,13 @@ class OneDirHandler(FileSystemEventHandler, ):
         if (source.find(".git") == -1 and source.find(".idea") == -1):
             print("File deleted! (" + source + " at time: " +
               time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
+            thread.start_new_thread(self.machine.deleted(source))
     def on_modified(self, event):
         source = event.src_path[self.locallen:]
         if (source.find(".git") == -1 and source.find(".idea") == -1):
             print("File modified! (" + source + " at time: " +
               time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-
-# if __name__=='__main__':
-#     filename = 'testfile.docx'
-#     lm_one = LocalMachine('testUser', '/test_user/machineOne/OneDir', address='localhost', port=1234)
-#     lm_one.sendFile(filename)
-
-#if __name__=='__main__':
-#    filename = 'testfile.docx'
-#    lm_one = LocalMachine('testUser', '~/test_user/machineOne/OneDir', address='localhost', port=1234)
-#    lm_one.sendFile(filename)
-
+            thread.start_new_thread(self.machine.modified(source))
 
 if __name__ == "__main__":
     lm_one = LocalMachine('testUser', '~/test_user/machineOne/OneDir', address='localhost', port=1234)
