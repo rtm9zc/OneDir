@@ -7,6 +7,9 @@ from file_transfer import *
 from binascii import crc32
 from client import *
 
+import pickle
+from socket import *
+
 
 class Server():
 
@@ -40,6 +43,8 @@ class Server():
             return self.usersToPW[username] == password
         else:
             return False
+
+
 
     def sendFileToLocalMachines(self, username, filePath):
 
@@ -82,3 +87,25 @@ if __name__=='__main__':
             #command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + test_server.file_path_ + '/' + filename
             #os.system(command)
             print "we will now send the file to machine with username " + machine.getUsername() + " and address " + machine.getAddress()
+
+
+    #The server needs to listen for whether it receives a new array from a client
+            #(this will indicate what work it needs to do to handle a file change)
+
+    # Set the socket parameters
+    host = "localhost"
+    port = 21567
+    buf = 4096
+    addr = (host,port)
+
+    # Create socket and bind to address
+    UDPSock = socket(AF_INET,SOCK_DGRAM)
+    UDPSock.bind(addr)
+
+    # Receive messages
+    while 1:
+
+        data,addr = UDPSock.recvfrom(buf)
+        receivedArray = pickle.loads(data)
+        break
+        # We do not close the socket so it will continue to listen after it receives an array
