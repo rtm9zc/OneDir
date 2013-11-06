@@ -60,17 +60,21 @@ class LocalMachine():
     #These will be only called from the OneDirHandler
     #Will be handled by a listener method on the server
     def moved(self, source, destination):
-        self.sendString(self.username_ + " " + self.address_ + " mov " + source + " " + destination)
+        fileData = [self.username_, self.address_, "mov", source, destination]
+        self.sendArray(fileData)
         #some shit to listen for a confirming response
     def deleted(self, file):
-        self.sendString(self.username_ + " " + self.address_ + " del " + file)
+        fileData = [self.username_, self.address_, "del", file]
+        self.sendArray(fileData)
         #some shit to listen for a confirming response
     def modified(self, file):
-        self.sendString(self.username_ + " " + self.address_ + " mod " + file)
+        fileData = [self.username_, self.address_, "mod", file]
+        self.sendArray(fileData)
         #some shit to listen for a confirming response
         self.sendFile(file)
     def created(self, file):
-        self.sendString(self.username_ + " " + self.address_ + " cre " + file)
+        fileData = [self.username_, self.address_, "cre", file]
+        self.sendArray(fileData)
         #some shit to listen for a confirming response
         self.sendFile(file)
 
