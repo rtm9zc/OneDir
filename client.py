@@ -12,6 +12,9 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import thread
 
+import pickle
+from socket import *
+
 
 class LocalMachine():
 
@@ -22,15 +25,31 @@ class LocalMachine():
         self.port_ = port
 
     def sendFile(self, fileName):
-        # transmitOne(self.file_path_,self.address_,self.port_)
-        # print 'Dialing on port',self.port_,'..'
-        # reactor.run()
-        command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + self.file_path_ + '/' + fileName
-        os.system(command)
+        transmitOne(self.file_path_,self.address_,self.port_)
+        print 'Dialing on port',self.port_,'..'
+        reactor.run()
 
-    def sendString(self, string):
-        #some stuff to send a formatted string to the server
-        print(string) #placeholder so it compiles
+    def sendArray(self, array):
+        host = "localhost"
+        port = self.port
+        buf = 4096
+        addr = (host,port)
+
+        # Create socket
+        UDPSock = socket(AF_INET,SOCK_DGRAM)
+
+        a = self.array
+
+        # Send the array
+        while (1):
+            if(UDPSock.sendto( pickle.dumps(a), addr)):
+                print "Sending message"
+                break
+
+    # Close socket
+    UDPSock.close()
+
+
 
     def getUsername(self):
         return self.username_
