@@ -27,7 +27,7 @@ class LocalMachine():
     def sendFile(self, fileName):
         transmitOne(self.file_path_,self.address_,self.port)
         print 'Dialing on port',self.port,'..'
-        #reactor.run(installSignalHandlers=0)
+        reactor.run(installSignalHandlers=0)
 
     def sendArray(self, array):
         host = "localhost"
