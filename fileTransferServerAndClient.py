@@ -62,6 +62,7 @@ from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
+import sys
 
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -135,6 +136,7 @@ class FileIOProtocol(basic.LineReceiver):
         self.remain = int(self.size)
         print ' & Entering raw mode.',self.outfile, self.remain
         self.setRawMode()
+
 
     def rawDataReceived(self, data):
         """ """
@@ -312,24 +314,45 @@ def build_parser():
 parser = build_parser()
 (options, args) = parser.parse_args()
 
-file_arg = args[0]
-file_path = file_arg
+#file_arg = args[0]
+#file_path = file_arg
 
 if __name__=='__main__':
-    assert options.use_client or options.use_server,"Must specify client or server"
-    assert options.port,'Must provide --port'
-    port = int(options.port)
-    address = options.address
+    #assert options.use_client or options.use_server,"Must specify client or server"
+    #assert options.port,'Must provide --port'
+    #port = int(options.port)
+    #address = options.address
+    sys.stdout.write("Input port number")
+    portString = raw_input()
+    port = int(portString)
+    sys.stdout.write("Client or Server?")
+    status = raw_input()
 
-    if options.use_client:
-        if not file_arg:
-            file_path = sys.argv[0]
-        transmitOne(file_path,port=port,address=address)
-        print 'Dialing on port',port,'..'
-        reactor.run()
 
-    if options.use_server:
+
+    if status == "Client":
+        #client loop for listen
+        #while looping if detectChange go to |
+        #                                    v
+            # send message
+        sys.stdout.write("Input address")
+        address = raw_input()
+        sys.stdout.write("Input file path")
+        file_path = raw_input()
+
         fileio = FileIOFactory({})
         reactor.listenTCP(port, fileio)
         print 'Listening on port',port,'..'
         reactor.run()
+
+        #transmitOne(file_path,port=port,address=address)
+        #print 'Dialing on port',port,'..'
+        #reactor.run()
+        #PROBABLY NEED TO SET UP SEPERATE CLIENT CLASS THAT FOLLOWS THIS MOSTLY BUT WITH CHANGES SPECIFIC FOR CLIENT
+
+    if status == "Server":
+        fileio = FileIOFactory({})
+        reactor.listenTCP(port, fileio)
+        print 'Listening on port',port,'..'
+        reactor.run()
+        #throws errors if you try to send messages that aren't from the client setup it has now? I think?
