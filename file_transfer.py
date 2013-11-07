@@ -240,6 +240,7 @@ def transmitOne(path, address='localhost', port=1234,):
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
     reactor.connectTCP(address, port, f)
+    print "what"
     return controller.completed
 
 #
