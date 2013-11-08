@@ -10,7 +10,8 @@ import logging
 import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import thread
+import multiprocessing
+import threading
 
 import pickle
 from socket import *
@@ -24,10 +25,11 @@ class LocalMachine():
         self.address_ = address
         self.port = port
 
-    def sendFile(self, fileName):
+    def sendFile(self):
         transmitOne(self.file_path_,self.address_,self.port)
         print 'Dialing on port',self.port,'..'
         reactor.run(installSignalHandlers=0)
+        #will not work more than once!
         #fix this ^
         #         | ?  Works, but buggy, I think.
 
@@ -61,22 +63,24 @@ class LocalMachine():
     #Will be handled by a listener method on the server
     def moved(self, source, destination):
         fileData = [self.username_, self.address_, "mov", source, destination]
-        self.sendArray(fileData)
+        #self.sendArray(fileData)
         #some shit to listen for a confirming response
     def deleted(self, file):
         fileData = [self.username_, self.address_, "del", file]
-        self.sendArray(fileData)
+        #self.sendArray(fileData)
         #some shit to listen for a confirming response
     def modified(self, file):
         fileData = [self.username_, self.address_, "mod", file]
-        self.sendArray(fileData)
+        #self.sendArray(fileData)
         #some shit to listen for a confirming response
-        self.sendFile(file)
+        self.sendFile()
+
     def created(self, file):
         fileData = [self.username_, self.address_, "cre", file]
-        self.sendArray(fileData)
-        #some shit to listen for a confirming response
-        self.sendFile(file)
+        #self.sendArray(fileData)
+        #some shit to listen for a confirming response.
+        self.sendFile()
+
 
 class OneDirHandler(FileSystemEventHandler, ):
     localstring = (str)
@@ -119,9 +123,10 @@ class OneDirHandler(FileSystemEventHandler, ):
             self.machine.modified(source)
 
 if __name__ == "__main__":
-    lm_one = LocalMachine('testUser', '~/OneDir', address='localhost', port=1234)
-    #Switch to Linux ^ or figure out a way to make this work on windows too
-    #                |
+    #test = open(, 'rb')
+    #reactor.run()
+    lm_one = LocalMachine('testUser', '/home/student/pycharm-community-3.0.1/OneDir/test_user/test.txt', address='localhost', port=1234)
+#
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
@@ -130,7 +135,7 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
-    print '~/test_user/machineOne/OneDir'
+    #print '~/test_user/machineOne/OneDir'
     try:
         while True:
             #print "woah"

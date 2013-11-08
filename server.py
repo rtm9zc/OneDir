@@ -80,8 +80,8 @@ class Server():
 
 if __name__=='__main__':
     test_server = Server('~/TestServer')
-    lm_one = LocalMachine('testUser', '~/test_user/machineOne/OneDir', address='localhost', port=1234)
-    lm_two = LocalMachine('testUser', '~/test_user/machineTwo/OneDir', address='localhost', port=1234)
+    lm_one = LocalMachine('testUser', '/home/student/', address='localhost', port=1234)
+    lm_two = LocalMachine('testUser', '/home/student/', address='localhost', port=1234)
     test_server.addUser('testUser', 1234)
     test_server.addLocalMachine('testUser', lm_one)
     test_server.addLocalMachine('testUser', lm_two)

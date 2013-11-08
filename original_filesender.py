@@ -1,3 +1,57 @@
+""" file: filesender.py
+
+    Adapted from: Steven Wang's <steven.zdwang at gmail.com> post at:
+          http://twistedmatrix.com/pipermail/twisted-python/2007-July/015738.html
+
+    Usage: filesender.py [options]
+       Options:
+         -h, --help         show this help message and exit
+         --port=PORT        Which port to use. (default "1234")
+         --address=ADDRESS  Which address to use. (default "localhost")
+         --server           Use server
+         --client           Use client
+
+    Examples:
+
+      filesender.py --server <upload_save_directory>
+      filesender.py --client <file_to_send>
+
+    Example Output:
+
+      Server:
+                shell$ python ~/code/filesender.py --server --port 1234 /tmp
+                    Listening on port 1234 ..
+
+                     + a connection was made
+                     *  IPv4Address(TCP, '127.0.0.1', 44621)
+                     ~ lineReceived:
+                            {"original_file_path": "/home/matt/Videos/hutter-ai.avi", "file_size": 218266926}
+                     * Using upload dir: /tmp
+                     * Receiving into file@ /tmp/data.out
+                     & Entering raw mode. <open file '/tmp/data.out', mode 'wb' at 0x1fb01c8> 218266926
+                     - connectionLost
+
+                    --> finished saving upload@/tmp/data.out
+                    --------------------------------------------------------------------------------
+                    {'client': '127.0.0.1',
+                     'crc': 1713872441,
+                     'file_metadata': ' RIFF (little-endian) data, AVI, 720 x 480, ~30 fps, video',
+                     'file_size': 218266926,
+                     'new_file': '/tmp/data.out',
+                     'original_file': u'/home/matt/Videos/hutter-ai.avi',
+                     'upload_time': datetime.datetime(2010, 10, 16, 22, 27, 18, 683145)}
+
+      Client:
+                shell$ python ~/code/filesender.py --client ~/Videos/hutter.avi
+                    + building protocol
+                    - connectionLost
+                     *  Connection was closed cleanly.
+                    * finished with /home/matt/Videos/hutter-ai.avi
+
+"""
+
+# PLEASE PLEASE PLEASE DO NOT CHANGE THIS FILE
+# THIS IS THE ORIGINAL SAMPLE CODE FOR FILE SENDING
 
 from binascii import crc32
 from optparse import OptionParser
@@ -65,7 +119,7 @@ class FileIOProtocol(basic.LineReceiver):
             return
 
         # Create the upload directory if not already present
-        uploaddir = self.original_fname
+        uploaddir = file_path
         print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
@@ -87,7 +141,7 @@ class FileIOProtocol(basic.LineReceiver):
     def rawDataReceived(self, data):
         """ """
         if self.remain%10000==0:
-            print ' & ',self.remain,'/',self.size
+            print '   & ',self.remain,'/',self.size
         self.remain -= len(data)
 
         self.crc = crc32(data, self.crc)
@@ -120,13 +174,13 @@ class FileIOProtocol(basic.LineReceiver):
         else:
             print '\n--> finished saving upload@' + self.outfilename
             client = self.instruction.get('client', 'anonymous')
-            self.status.update( crc = self.crc,
-                                file_size = self.size,
-                                client = client,
-                                new_file = self.outfilename,
+            self.status.update( crc           = self.crc,
+                                file_size     = self.size,
+                                client        = client,
+                                new_file      = self.outfilename,
                                 original_file = self.original_fname,
                                 file_metadata = fileinfo(self.outfilename),
-                                upload_time = datetime.datetime.now() )
+                                upload_time   = datetime.datetime.now() )
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
     return ( os.system('file 2> /dev/null')!=0 and \
@@ -200,11 +254,11 @@ class FileIOClient(basic.LineReceiver):
 
     def connectionLost(self, reason):
         """
-NOTE: reason is a twisted.python.failure.Failure instance
-"""
+            NOTE: reason is a twisted.python.failure.Failure instance
+        """
         from twisted.internet.error import ConnectionDone
         basic.LineReceiver.connectionLost(self, reason)
-        print ' - connectionLost\n * ', reason.getErrorMessage()
+        print ' - connectionLost\n  * ', reason.getErrorMessage()
         print ' * finished with',self.path
         self.infile.close()
         if self.completed:
@@ -240,26 +294,48 @@ def transmitOne(path, address='localhost', port=1234,):
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
     reactor.connectTCP(address, port, f)
-    #print "what"
     return controller.completed
 
-#
-# if __name__=='__main__':
-#     assert options.use_client or options.use_server,"Must specify client or server"
-#     assert options.port,'Must provide --port'
-#     port = int(options.port)
-#     address = options.address
-#
-#     if options.use_client:
-#         if not file_arg:
-#             file_path = sys.argv[0]
-#         transmitOne(file_path,port=port,address=address)
-#         print 'Dialing on port',port,'..'
-#         reactor.run()
-#
-#     if options.use_server:
-#         fileio = FileIOFactory({})
-#         reactor.listenTCP(port, fileio)
-#         print 'Listening on port',port,'..'
-#         reactor.run()
-#
+
+def build_parser():
+    """ builds the command line parser """
+    parser = OptionParser()
+    portHelp = 'Which port to use. (default "1234")'
+    addressHelp = 'Which address to use. (default "localhost")'
+    serverHelp = "Use server"
+    clientHelp = "Use client"
+    parser.add_option("--port", dest="port", default='1234', help=portHelp, metavar="PORT")
+    parser.add_option("--address", dest="address", default='127.0.0.1', help=addressHelp, metavar="ADDRESS")
+    parser.add_option("--server",action="store_true",default=False, dest="use_server",help=serverHelp)
+    parser.add_option("--client",action="store_true",default=False, dest="use_client",help=clientHelp)
+    return parser
+
+
+parser = build_parser()
+(options, args) = parser.parse_args()
+
+file_arg = args[0]
+file_path = file_arg
+
+if __name__=='__main__':
+    assert options.use_client or options.use_server,"Must specify client or server"
+    assert options.port,'Must provide --port'
+    port    = int(options.port)
+    address  = options.address
+
+    if options.use_client:
+        if not file_arg:
+            file_path = sys.argv[0]
+        transmitOne(file_path,port=port,address=address)
+        print 'Dialing on port',port,'..'
+        reactor.run()
+
+    if options.use_server:
+        fileio = FileIOFactory({})
+        reactor.listenTCP(port, fileio)
+        print 'Listening on port',port,'..'
+        reactor.run()
+
+
+# PLEASE PLEASE PLEASE DO NOT CHANGE THIS FILE
+# THIS IS THE ORIGINAL SAMPLE CODE FOR FILE SENDING
