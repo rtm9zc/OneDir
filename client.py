@@ -10,7 +10,7 @@ import logging
 import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import multiprocessing
+from multiprocessing import Process
 import threading
 
 import pickle
@@ -73,13 +73,15 @@ class LocalMachine():
         fileData = [self.username_, self.address_, "mod", file]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response
-        self.sendFile()
+        p = Process(target=self.sendFile)
+        p.start()
 
     def created(self, file):
         fileData = [self.username_, self.address_, "cre", file]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response.
-        self.sendFile()
+        p = Process(target=self.sendFile)
+        p.start()
 
 
 class OneDirHandler(FileSystemEventHandler, ):
@@ -136,10 +138,10 @@ if __name__ == "__main__":
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
     #print '~/test_user/machineOne/OneDir'
-    try:
-        while True:
-            #print "woah"
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
+    #try:
+    #    while True:
+    #        #print "woah"
+    #        time.sleep(1)
+    #except KeyboardInterrupt:
+    #    observer.stop()
     observer.join()
