@@ -2,7 +2,8 @@ __author__ = 'Student'
 
 from twisted.spread import pb
 from twisted.internet import reactor
-from file_transfer import *
+#from file_transfer import *
+import listenAndServe
 #from fileTransferServerAndClient import *
 from binascii import crc32
 from client import *
@@ -19,13 +20,10 @@ class Server():
         # stores users to passwords
         self.usersToPW = {}
         # server filepath
-        self.file_path_ = filePath
-        self.port_ = 1234
+        self.file_path = filePath
+        self.port = 1234
 
-        # fileio = FileIOFactory({})
-        # reactor.listenTCP(self.port_, fileio)
-        # print 'Listening on port',self.port_,'..'
-        # reactor.run()
+
 
     def addLocalMachine(self, username, localMachine):
         if username not in self.usersToLM:
@@ -75,37 +73,44 @@ if __name__=='__main__':
     test_server.addUser('testUser', 1234)
     test_server.addLocalMachine('testUser', lm_one)
     test_server.addLocalMachine('testUser', lm_two)
-
-    command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --server --port ' + str(test_server.port_) + ' ' + test_server.file_path_
-    os.system(command)
+    # remove/fix below, pointless, doesn't need to call a new process or whatever, easier ways to do it
+    # just call method with port and file path
+   # command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --server --port ' +  + ' ' + test_server.file_path_
+    fileio = listenAndServe.FileIOFactory({})
+    reactor.listenTCP(test_server.port, fileio)
+    #test_server.file_path
+    print 'Listening on port',test_server.port,'..'
+    reactor.run()
 
     # detect which machine it came from and name of file
-    filename = 'testfile.docx'
-    from_machine = lm_one
-    for machine in test_server.usersToLM[lm_one.getUsername()]:
-        if machine != lm_one:
-            #command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + test_server.file_path_ + '/' + filename
+   # filename = 'testfile.docx'
+    #from_machine = lm_one
+   # for machine in test_server.usersToLM[lm_one.getUsername()]:
+    #    if machine != lm_one:
+      #      #command = 'python ~/PycharmProjects/OneDir/fileTransferServerAndClient.py --client ' + test_server.file_path_ + '/' + filename
             #os.system(command)
-            print "we will now send the file to machine with username " + machine.getUsername() + " and address " + machine.getAddress()
+      #      print "we will now send the file to machine with username " + machine.getUsername() + " and address " + machine.getAddress()
 
 
     #The server needs to listen for whether it receives a new array from a client
             #(this will indicate what work it needs to do to handle a file change)
+    #|
+    #v not reallly sure why this is necessary
 
     # Set the socket parameters
-    host = "localhost"
-    port = 21567
-    buf = 4096
-    addr = (host,port)
+    #    host = "localhost"
+     #   port = 21567
+    #    buf = 4096
+    #    addr = (host,port)
+    #
+        # Create socket and bind to address
+     #   UDPSock = socket(AF_INET,SOCK_DGRAM)
+     #   UDPSock.bind(addr)
 
-    # Create socket and bind to address
-    UDPSock = socket(AF_INET,SOCK_DGRAM)
-    UDPSock.bind(addr)
+        # Receive messages
+     #   while 1:
 
-    # Receive messages
-    while 1:
-
-        data,addr = UDPSock.recvfrom(buf)
-        receivedArray = pickle.loads(data)
-        break
+     #       data,addr = UDPSock.recvfrom(buf)
+     #       receivedArray = pickle.loads(data)
+     #       break
         # We do not close the socket so it will continue to listen after it receives an array

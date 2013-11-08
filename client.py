@@ -28,6 +28,8 @@ class LocalMachine():
         transmitOne(self.file_path_,self.address_,self.port)
         print 'Dialing on port',self.port,'..'
         reactor.run(installSignalHandlers=0)
+        #fix this ^
+        #         | ?  Works, but buggy, I think.
 
     def sendArray(self, array):
         host = "localhost"
@@ -117,7 +119,9 @@ class OneDirHandler(FileSystemEventHandler, ):
             self.machine.modified(source)
 
 if __name__ == "__main__":
-    lm_one = LocalMachine('testUser', '~/test_user/machineOne/OneDir', address='localhost', port=1234)
+    lm_one = LocalMachine('testUser', '~/OneDir', address='localhost', port=1234)
+    #Switch to Linux ^ or figure out a way to make this work on windows too
+    #                |
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
@@ -126,6 +130,7 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
+    print '~/test_user/machineOne/OneDir'
     try:
         while True:
             #print "woah"
