@@ -65,7 +65,7 @@ class FileIOProtocol(basic.LineReceiver):
             return
 
         # Create the upload directory if not already present
-        uploaddir = file_path
+        uploaddir = self.original_fname
         print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
