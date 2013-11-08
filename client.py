@@ -71,13 +71,13 @@ class LocalMachine():
         #some shit to listen for a confirming response
     def modified(self, file):
         fileData = [self.username_, self.address_, "mod", file]
-        self.sendArray(fileData)
+        #self.sendArray(fileData)
         #some shit to listen for a confirming response
         self.sendFile()
 
     def created(self, file):
         fileData = [self.username_, self.address_, "cre", file]
-        self.sendArray(fileData)
+        #self.sendArray(fileData)
         #some shit to listen for a confirming response.
         self.sendFile()
 
