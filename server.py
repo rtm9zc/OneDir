@@ -4,10 +4,11 @@ from twisted.spread import pb
 from twisted.internet import reactor
 #from file_transfer import *
 import listenAndServe
+import Queue
 #from fileTransferServerAndClient import *
 from binascii import crc32
 from client import *
-
+from threading import Thread
 import pickle
 from socket import *
 
@@ -42,7 +43,18 @@ class Server():
         else:
             return False
 
-
+    def receive(self, host, port, buf, aqueue):
+        addr = (host,port)
+        UDPSock = socket(AF_INET,SOCK_DGRAM)
+        UDPSock.bind(addr)
+        # Receive messages
+        while True:
+            try:
+                data,addr = UDPSock.recvfrom(buf)
+                receivedArray = pickle.loads(data)
+                aqueue.put(receivedArray)
+            except:
+                break
 
     def sendFileToLocalMachines(self, username, filePath):
 
@@ -81,6 +93,35 @@ if __name__=='__main__':
     #test_server.file_path
     print 'Listening on port',test_server.port,'..'
     reactor.run()
+    arrayQueue = Queue.Queue()
+    thread = Thread(target = test_server.receive,
+                    args = ("localhost", 21567, 4096, arrayQueue))
+    while True:
+        try:
+            if (arrayQueue.empty()):
+                time.sleep(1)
+            else:
+                current = arrayQueue.get()
+                function = current[2]
+                if (function == "mov"):
+                    #change name of file on server
+                    #change name on all locals
+                    1
+                elif (function == "del"):
+                    #remove file on server
+                    #tell all locals to delete
+                    1
+                elif (function == "mod"):
+                    #update file on server
+                    #send new version to all locals
+                    1
+                elif (function == "cre"):
+                    #make new file on server
+                    #send file to all locals
+                    1
+        except:
+            break
+    thread.join()
 
     # detect which machine it came from and name of file
    # filename = 'testfile.docx'
