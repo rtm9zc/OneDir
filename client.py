@@ -16,14 +16,23 @@ import threading
 import pickle
 from socket import *
 
+# Client listening port (and server sending port) = 2000
+# Server listening port (and client sending port) = 3000
+# Client send array port (and server listening array port) = 4000
+
 
 class LocalMachine():
 
-    def __init__(self, username, filePath, address='localhost', port=1234):
+    def __init__(self, username, filePath, address='localhost'):
         self.username_ = username
         self.file_path_ = filePath
         self.address_ = address
-        self.port = port
+        
+        self.listeningport = 2000
+        self.sendingport = 3000
+        self.arrayport = 4000
+
+        
 
     def sendFile(self):
         transmitOne(self.file_path_,self.address_,self.port)
