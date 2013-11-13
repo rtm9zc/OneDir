@@ -12,6 +12,10 @@ from threading import Thread
 import pickle
 from socket import *
 
+# Client listening port (and server sending port) = 2000
+# Server listening port (and client sending port) = 3000
+# Client send array port (and server listening array port) = 4000
+
 
 class Server():
 
@@ -22,7 +26,9 @@ class Server():
         self.usersToPW = {}
         # server filepath
         self.file_path = filePath
-        self.port = 1234
+        self.listeningport = 3000
+        self.sendingport = 2000
+        self.arrayport = 4000
 
 
 
@@ -80,8 +86,8 @@ class Server():
 
 if __name__=='__main__':
     test_server = Server('~/TestServer')
-    lm_one = LocalMachine('testUser', '/home/student/', address='localhost', port=1234)
-    lm_two = LocalMachine('testUser', '/home/student/', address='localhost', port=1234)
+    lm_one = LocalMachine('testUser', '/home/student/', address='localhost')
+    lm_two = LocalMachine('testUser', '/home/student/', address='localhost')
     test_server.addUser('testUser', 1234)
     test_server.addLocalMachine('testUser', lm_one)
     test_server.addLocalMachine('testUser', lm_two)
