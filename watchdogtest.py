@@ -2,8 +2,8 @@ import sys
 import time
 import logging
 import os
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchDir.observers import Observer
+from watchDir.events import FileSystemEventHandler
 
 class OneDirHandler(FileSystemEventHandler):
     localstring = (str)
