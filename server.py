@@ -1,13 +1,12 @@
 __author__ = 'Student'
 
-from twisted.spread import pb
-from twisted.internet import reactor
 #from file_transfer import *
-import listenAndServe
 import Queue
+
+import listenAndServe
+
 #from fileTransferServerAndClient import *
-from binascii import crc32
-from client import *
+from watchDir.sendingClient import *
 from threading import Thread
 import pickle
 from socket import *

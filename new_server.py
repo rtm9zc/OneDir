@@ -174,6 +174,7 @@ class FileIOClient(basic.LineReceiver):
         instruction = dict(file_size=self.insize,
                            original_file_path=self.path)
         instruction = json.dumps(instruction)
+        print "test"
         self.transport.write(instruction+'\r\n')
         sender = FileSender()
         sender.CHUNK_SIZE = 2 ** 16
@@ -302,7 +303,7 @@ class FileIOServerFactory(ServerFactory):
         return controller.completed
 
 if __name__ == "__main__":
-    server = FileIOServerFactory('/Users/alowman/TestServer')
+    server = FileIOServerFactory('/home/')
     # my laptop
     lm_one = LocalMachine('KingGeorge', '/Users/alowman/test_user/machineOne/OneDir', address='127.0.0.1', send_port=1234, listen_port=1235)
     # lab desktop

@@ -1,26 +1,19 @@
 #from new_file_transfer import *
 #from new_server import *
-import sys
-import time
-import logging
-import os
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-
-
 from binascii import crc32
-from optparse import OptionParser
-import os, json, pprint, datetime
+import os
+import json
+import pprint
 
 from twisted.protocols import basic
-from twisted.internet import protocol
-from twisted.application import service, internet
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
-from multiprocessing import Process
+
+from watchDir.sendingClient import LocalMachine
+
 
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -171,7 +164,6 @@ class FileIOClient(basic.LineReceiver):
         """
             NOTE: reason is a twisted.python.failure.Failure instance
         """
-        from twisted.internet.error import ConnectionDone
         basic.LineReceiver.connectionLost(self, reason)
         print ' - connectionLost\n  * ', reason.getErrorMessage()
         print ' * finished with',self.path
@@ -247,7 +239,7 @@ class LocalMachine(ServerFactory):
         reactor.connectTCP(address, port, f)
         return controller.completed
 
-    def test_handler(self):
+    #def test_handler(self):
 
 
     def get_user(self):
@@ -264,6 +256,14 @@ class LocalMachine(ServerFactory):
 
     def get_sendport(self):
         return self.send_port
+
+
+def doEverything():
+    lm = LocalMachine('testUser', '/home/student/pycharm-community-3.0.1/OneDir/test_user/test.txt', address='localhost')
+    reactor.listenTCP(lm_one.listen_port, lm_one)
+    print 'Listening on port',lm_one.listen_port,'..'
+    #lm_one.send_file('/Users/alowman/test_user/machineOne/OneDir/testfile.docx')
+    reactor.run()
 
 if __name__ == "__main__":
 
@@ -288,8 +288,8 @@ if __name__ == "__main__":
 
     # if event occurs:
 
-
+    lm = LocalMachine('testUser', '/home/student/pycharm-community-3.0.1/OneDir/test_user/test.txt', address='localhost')
     reactor.listenTCP(lm_one.listen_port, lm_one)
     print 'Listening on port',lm_one.listen_port,'..'
-    lm_one.send_file('/Users/alowman/test_user/machineOne/OneDir/testfile.docx')
+    #lm_one.send_file('/Users/alowman/test_user/machineOne/OneDir/testfile.docx')
     reactor.run()

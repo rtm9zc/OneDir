@@ -1,8 +1,6 @@
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from watchdog.events import LoggingEventHandler
-from client import LocalMachine
 
 class OneDir_Observer():
 
@@ -17,7 +15,7 @@ class OneDir_Observer():
     def startWatching(self):
         self.event_handler = OneDirHandler(self.lm)
         self.observer = Observer()
-        self.observer.schedule(self.event_handler, '/home/student/OneDir/test_user/', recursive=True)
+        self.observer.schedule(self.event_handler, self.lm.oneDir, recursive=True)
         self.observer.start()
         self.observer.join()
 
@@ -40,7 +38,7 @@ class OneDirHandler(FileSystemEventHandler):
             print("File moved! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             print("Destination: " + dest)
-         #   self.machine.moved(source, dest)
+            self.machine.moved(source, dest)
     def on_created(self, event):
         #Called on making new file
         #Should send file over to server
@@ -48,7 +46,7 @@ class OneDirHandler(FileSystemEventHandler):
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File created! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-          #  self.machine.created(source)
+            self.machine.created(source)
     def on_deleted(self, event):
         #Called on deletion of file/directory
         #Server should delete same file
@@ -56,10 +54,10 @@ class OneDirHandler(FileSystemEventHandler):
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File deleted! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-           # self.machine.deleted(source)
+            self.machine.deleted(source)
     def on_modified(self, event):
         source = event.src_path
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File modified! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-            #self.machine.modified(source)
+            self.machine.modified(source)
