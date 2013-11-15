@@ -47,17 +47,17 @@ class LocalMachine():
     #Will be handled by a listener method on the server
     def moved(self, fileSource, destination):
         #print "_____MOVE______"
-        fileData = [self.username_, self.address_, "mov", fileSource, destination]
+        fileData = [self.username, self.address, "mov", fileSource, destination]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response
     def deleted(self, fileSource):
         #print "_____DELETE______"
-        fileData = [self.username_, self.address_, "del", fileSource]
+        fileData = [self.username, self.address, "del", fileSource]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response
     def modified(self, fileSource):
         #print "_____MOD______"
-        fileData = [self.username_, self.address_, "mod", fileSource]
+        fileData = [self.username, self.address, "mod", fileSource]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response
         p = Process(target=self.transmitFile, args=(fileSource,))
