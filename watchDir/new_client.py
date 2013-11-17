@@ -12,7 +12,7 @@ from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
-from watchDir.sendingClient import LocalMachine
+from sendingClient import LocalMachine
 
 
 pp = pprint.PrettyPrinter(indent=1)
