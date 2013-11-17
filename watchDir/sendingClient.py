@@ -65,7 +65,7 @@ class LocalMachine():
 
     def created(self, fileSource):
         #print "_____CREATE______"
-        fileData = [self.username_, self.address_, "cre", fileSource]
+        fileData = [self.username, self.address, "cre", fileSource]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response.
         p = Process(target=self.transmitFile, args=(fileSource,))

@@ -303,9 +303,9 @@ class FileIOServerFactory(ServerFactory):
         return controller.completed
 
 if __name__ == "__main__":
-    server = FileIOServerFactory('/home/student/')
+    server = FileIOServerFactory('/home/student/OneDir/test_server')
     # my laptop
-    lm_one = LocalMachine('KingGeorge', '/home/student/testDirectory', address='127.0.0.1', send_port=1234, listen_port=1235)
+    lm_one = LocalMachine('KingGeorge', '/home/student/test_user2', address='127.0.0.1', send_port=1234, listen_port=1235)
     # lab desktop
     #lm_two = LocalMachine('KingGeorge', '~/home/ajl3mp/OneDir', address='128.143.63.86', send_port=1234, listen_port=1235)
 
