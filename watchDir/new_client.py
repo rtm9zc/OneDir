@@ -1,23 +1,19 @@
-#from new_file_transfer import FileIOProtocol
 #from new_file_transfer import *
-from new_client import *
-
-
+#from new_server import *
 from binascii import crc32
-from optparse import OptionParser
-import os, json, pprint, datetime
+import os
+import json
+import pprint
 
 from twisted.protocols import basic
-from twisted.internet import protocol
-from twisted.application import service, internet
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
-from new_client import *
-from new_server import *
+from watchDir.sendingClient import LocalMachine
+
 
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -25,7 +21,8 @@ class TransferCancelled(Exception):
     """ Exception for a user cancelling a transfer """
     pass
 
-class ServerReceiverProtocol(basic.LineReceiver):
+
+class ClientReceiverProtocol(basic.LineReceiver):
     """ File Receiver """
 
     def __init__(self):
@@ -99,31 +96,13 @@ class ServerReceiverProtocol(basic.LineReceiver):
         # Success uploading - tmpfile will be saved to disk.
         else:
 
-        # Add some stuff here
-
-            # get client connected to using .getPeer() -->
-
-            user_address = self.transport.getPeer().host
-
-
-
-            # get username from the connection; call it username
-
-            #self.factory.sendToMachines(user_address, self.outfilename)
-
-            print '\n--> finished saving upload@' + self.outfilename
-
-            print 'user_address is ', user_address
-
-            print 'about to call testSendMachines()'
-
-            self.factory.testSendMachines(user_address)
-
+                print '\n--> finished saving upload@' + self.outfilename
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
     return ( os.system('file 2> /dev/null')!=0 and \
              os.path.exists(fname) and \
              os.popen('file "'+fname+'"').read().strip().split(':')[1] )
+
 
 class FileIOClient(basic.LineReceiver):
     """ file sender """
@@ -174,7 +153,6 @@ class FileIOClient(basic.LineReceiver):
         instruction = dict(file_size=self.insize,
                            original_file_path=self.path)
         instruction = json.dumps(instruction)
-        print "test"
         self.transport.write(instruction+'\r\n')
         sender = FileSender()
         sender.CHUNK_SIZE = 2 ** 16
@@ -186,7 +164,6 @@ class FileIOClient(basic.LineReceiver):
         """
             NOTE: reason is a twisted.python.failure.Failure instance
         """
-        from twisted.internet.error import ConnectionDone
         basic.LineReceiver.connectionLost(self, reason)
         print ' - connectionLost\n  * ', reason.getErrorMessage()
         print ' * finished with',self.path
@@ -222,7 +199,7 @@ class FileIOClientFactory(ClientFactory):
         return p
 
 
-def transmitOne(path, address='localhost', port=1235,):
+def transmitOne(path, address='localhost', port=1234,):
     """ helper for file transmission """
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
@@ -230,88 +207,68 @@ def transmitOne(path, address='localhost', port=1235,):
     return controller.completed
 
 
+class LocalMachine(ServerFactory):
 
-class FileIOServerFactory(ServerFactory):
-    """ file receiver factory """
-    protocol = ServerReceiverProtocol
+    protocol = ClientReceiverProtocol
 
-    def __init__(self, filePath, address='localhost', send_port=1235, listen_port=1234):
-        """ """
-        self.isServer = True
-        # stores local machines; dictionary
-        self.usersToLM = {}
-        # stores users to passwords
-        self.usersToPW = {}
-        # server filepath
+    def __init__(self, username, filePath, address='localhost', send_port=1234, listen_port=1235):
+        # username associated with the local machine
+        self.username_ = username
+        # file path for local machine
         self.dir_path = filePath
-        # server address
         self.address_ = address
 
         self.send_port = send_port
         self.listen_port = listen_port
 
-    def addLocalMachine(self, username, localMachine):
-        if username not in self.usersToLM:
-            self.usersToLM[username] = []
-        self.usersToLM[username].append(localMachine)
+        self.isServer = False
 
-    def addUser(self, username, password):
-        if username not in self.usersToPW:
-            self.usersToPW[username] = password
-            # raise an error that an account w/ that username already exists
+        #reactor.listenTCP(listen_port, self)
+        #reactor.run()
 
-    # method to check passwords against username; returns boolean
-    def checkPassword(self, username, password):
-        if username in self.usersToPW:
-            return self.usersToPW[username] == password
-        else:
-            return False
-
-    def sendToMachines(self, address, filepath):
-        username = self.retrieveUser(address)
-        for machine in self.usersToLM[username]:
-            if machine.address_ != address:
-                print 'address is ', address
-                transmitOne(filepath,machine.address_,self.send_port)
-
-    def retrieveUser(self, address):
-        print 'in retrieveUser'
-        for username in self.usersToLM:
-            print username
-            for machine in self.usersToLM[username]:
-                print machine.get_address()
-                if machine.get_address() == address:
-                    return username
-
-    def testSendMachines(self, address):
-        print 'in testSendMachines'
-        username = self.retrieveUser(address)
-        print 'username retrieved is ', username
-        for machine in self.usersToLM[username]:
-            print 'about to call send_file'
-            self.send_file('/home/student/OneDir/test_server/whatever.txt','127.0.0.1')
-
-    def send_file(self, filePath, address):
+    def send_file(self, filePath):
         # send to server (aka on my laptop)
         #transmitOne(filePath,'137.54.51.83',self.send_port)
         #transmitOne(filePath,port=self.send_port,address='localhost')
         #transmitOne(filePath, 'localhost',self.send_port)
+        #address = 'localhost'
+        address = '127.0.0.1'
         port = self.send_port
         controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
         f = FileIOClientFactory(filePath, controller)
         reactor.connectTCP(address, port, f)
         return controller.completed
 
-if __name__ == "__main__":
-    server = FileIOServerFactory('/home/student/OneDir/test_server')
-    # my laptop
-    lm_one = LocalMachine('testUser', '/home/student/test_user2', address='127.0.0.1', send_port=1234, listen_port=1235)
-    # lab desktop
-    #lm_two = LocalMachine('KingGeorge', '~/home/ajl3mp/OneDir', address='128.143.63.86', send_port=1234, listen_port=1235)
+    #def test_handler(self):
 
-    server.addUser('KingGeorge', 'password')
-    server.addLocalMachine('KingGeorge', lm_one)
-    print server.usersToLM
-    reactor.listenTCP(server.listen_port,server)
-    print 'Listening on port',server.listen_port,'..'
+
+    def get_user(self):
+        return self.username_
+
+    def get_address(self):
+        return self.address_
+
+    def get_filepath(self):
+        return self.dir_path
+
+    def get_listenport(self):
+        return self.listen_port
+
+    def get_sendport(self):
+        return self.send_port
+
+
+def startListening():
+    lm = LocalMachine('testUser', '/home/student/OneDir/test_user2', address='localhost')
+    reactor.listenTCP(lm_one.listen_port, lm_one)
+    print 'Listening on port',lm_one.listen_port,'..'
+    #lm_one.send_file('/Users/alowman/test_user/machineOne/OneDir/testfile.docx')
+    reactor.run()
+
+if __name__ == "__main__":
+
+    lm_one = LocalMachine('KingGeorge', '/home/student/OneDir/test_user2', address='127.0.0.1', send_port=1234, listen_port=1235)
+
+    reactor.listenTCP(lm_one.listen_port, lm_one)
+    print 'Listening on port',lm_one.listen_port,'..'
     reactor.run()
