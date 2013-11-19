@@ -12,7 +12,7 @@ from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
-from sendingClient import LocalMachine
+#from sendingClient import LocalMachine
 
 
 pp = pprint.PrettyPrinter(indent=1)
@@ -31,24 +31,14 @@ class ClientReceiverProtocol(basic.LineReceiver):
         self.remain = 0
         self.crc = 0
 
-    def lineReceived(self, line):
-        """ """
-        print ' ~ lineReceived:\n\t', line
+    def jsonStuff(self,line):
         self.instruction = json.loads(line)
         self.instruction.update(dict(client=self.transport.getPeer().host))
         self.size = self.instruction['file_size']
         self.original_fname = self.instruction.get('original_file_path',
                                                    'not given by client')
 
-        # Create the upload directory if not already present
-        uploaddir = self.factory.dir_path
-        print " * Using upload dir:",uploaddir
-        if not os.path.isdir(uploaddir):
-            os.makedirs(uploaddir)
-
-        # Need to change to be able to handle files within subdirectories!!!
-        self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
-
+    def setupFile(self):
         print ' * Receiving into file@',self.outfilename
         try:
             self.outfile = open(self.outfilename,'wb')
@@ -56,10 +46,35 @@ class ClientReceiverProtocol(basic.LineReceiver):
             print ' ! Unable to open file', self.outfilename, value
             self.transport.loseConnection()
             return
-
         self.remain = int(self.size)
         print ' & Entering raw mode.',self.outfile, self.remain
         self.setRawMode()
+
+    def lineReceived(self, line):
+        """ """
+        print ' ~ lineReceived:\n\t', line
+        try:
+            self.jsonStuff(line)
+        except ValueError:
+            print "Not a file to upload\n\t"
+            #if "MOV;" in line:
+            self.original_fname = line.split(';')[1]
+        # Create the upload directory if not already present
+
+        uploaddir = self.factory.dir_path
+        print " * Using upload dir:",uploaddir
+        if not os.path.isdir(uploaddir):
+            os.makedirs(uploaddir)
+        # Need to change to be able to handle files within subdirectories!!!
+        self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
+
+        if "MOV;" in line:
+            os.unlink(self.outfilename)
+            self.outfilename = "MOV;" + self.outfilename
+            self.remain = 0
+            self.connectionLost(reason="Done")
+        else:
+            self.setupFile()
 
     def rawDataReceived(self, data):
         """ """
@@ -258,12 +273,12 @@ class LocalMachine(ServerFactory):
         return self.send_port
 
 
-def startListening():
-    lm = LocalMachine('testUser', '/home/student/OneDir/test_user2', address='localhost')
-    reactor.listenTCP(lm_one.listen_port, lm_one)
-    print 'Listening on port',lm_one.listen_port,'..'
-    #lm_one.send_file('/Users/alowman/test_user/machineOne/OneDir/testfile.docx')
-    reactor.run()
+#def startListening():
+#    lm = LocalMachine('testUser', '/home/student/OneDir/test_user2', address='localhost')
+#    reactor.listenTCP(lm_one.listen_port, lm_one)
+#    print 'Listening on port',lm_one.listen_port,'..'
+#    #lm_one.send_file('/Users/alowman/test_user/machineOne/OneDir/testfile.docx')
+#    reactor.run()
 
 if __name__ == "__main__":
 
