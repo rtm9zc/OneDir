@@ -1,10 +1,6 @@
-#from new_file_transfer import FileIOProtocol
-#from new_file_transfer import *
-from new_client import *
 
 
 from binascii import crc32
-from optparse import OptionParser
 import os, json, pprint, datetime
 
 from twisted.protocols import basic
@@ -16,8 +12,8 @@ from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
-from new_client import *
-from new_server import *
+from new_client import LocalMachine
+import moveMessage
 
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -34,24 +30,14 @@ class ServerReceiverProtocol(basic.LineReceiver):
         self.remain = 0
         self.crc = 0
 
-    def lineReceived(self, line):
-        """ """
-        print ' ~ lineReceived:\n\t', line
+    def jsonStuff(self,line):
         self.instruction = json.loads(line)
         self.instruction.update(dict(client=self.transport.getPeer().host))
         self.size = self.instruction['file_size']
         self.original_fname = self.instruction.get('original_file_path',
                                                    'not given by client')
 
-        # Create the upload directory if not already present
-        uploaddir = self.factory.dir_path
-        print " * Using upload dir:",uploaddir
-        if not os.path.isdir(uploaddir):
-            os.makedirs(uploaddir)
-
-        # Need to change to be able to handle files within subdirectories!!!
-        self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
-
+    def setupFile(self):
         print ' * Receiving into file@',self.outfilename
         try:
             self.outfile = open(self.outfilename,'wb')
@@ -59,10 +45,37 @@ class ServerReceiverProtocol(basic.LineReceiver):
             print ' ! Unable to open file', self.outfilename, value
             self.transport.loseConnection()
             return
-
         self.remain = int(self.size)
         print ' & Entering raw mode.',self.outfile, self.remain
         self.setRawMode()
+
+    def lineReceived(self, line):
+        """ """
+        print ' ~ lineReceived:\n\t', line
+        try:
+            self.jsonStuff(line)
+        except ValueError:
+            print "Not a file to upload\n\t"
+            #if "MOV;" in line:
+            self.original_fname = line.split(';')[1]
+        # Create the upload directory if not already present
+
+        uploaddir = self.factory.dir_path
+        print " * Using upload dir:",uploaddir
+        if not os.path.isdir(uploaddir):
+            os.makedirs(uploaddir)
+        # Need to change to be able to handle files within subdirectories!!!
+        self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
+
+        if "MOV;" in line:
+            os.unlink(self.outfilename)
+            self.outfilename = "MOV;" + self.outfilename
+            self.remain = 0
+            self.connectionLost(reason="Done")
+            print "FILE MOVED OR DELETED FILE MOVED OR DELETED FILE MOVED OR DELETED"
+        else:
+            self.setupFile()
+
 
     def rawDataReceived(self, data):
         """ """
@@ -115,9 +128,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
             print 'user_address is ', user_address
 
-            print 'about to call testSendMachines()'
+            print 'about to call sendToMachines()'
 
-            self.factory.testSendMachines(user_address)
+            self.factory.sendToMachines(user_address, self.outfilename)
 
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -171,10 +184,13 @@ class FileIOClient(basic.LineReceiver):
 
     def connectionMade(self):
         """ """
+        #try:
         instruction = dict(file_size=self.insize,
                            original_file_path=self.path)
         instruction = json.dumps(instruction)
-        print "test"
+        #except ValueError:
+               # "Accepting as delete command instead..."
+
         self.transport.write(instruction+'\r\n')
         sender = FileSender()
         sender.CHUNK_SIZE = 2 ** 16
@@ -267,12 +283,13 @@ class FileIOServerFactory(ServerFactory):
         else:
             return False
 
-    def sendToMachines(self, address, filepath):
+    def sendToMachines(self, address, filePath):
+        print 'in sendToMachines'
         username = self.retrieveUser(address)
+        print 'username retrieved is ', username
         for machine in self.usersToLM[username]:
-            if machine.address_ != address:
-                print 'address is ', address
-                transmitOne(filepath,machine.address_,self.send_port)
+            print 'about to call send_file'
+            self.send_file(filePath,'127.0.0.1')
 
     def retrieveUser(self, address):
         print 'in retrieveUser'
@@ -283,13 +300,13 @@ class FileIOServerFactory(ServerFactory):
                 if machine.get_address() == address:
                     return username
 
-    def testSendMachines(self, address):
+    def testSendMachines(self, address, filePath):
         print 'in testSendMachines'
         username = self.retrieveUser(address)
         print 'username retrieved is ', username
         for machine in self.usersToLM[username]:
             print 'about to call send_file'
-            self.send_file('/home/student/OneDir/test_server/whatever.txt','127.0.0.1')
+            self.send_file(filePath,'127.0.0.1')
 
     def send_file(self, filePath, address):
         # send to server (aka on my laptop)
@@ -297,10 +314,13 @@ class FileIOServerFactory(ServerFactory):
         #transmitOne(filePath,port=self.send_port,address='localhost')
         #transmitOne(filePath, 'localhost',self.send_port)
         port = self.send_port
-        controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
-        f = FileIOClientFactory(filePath, controller)
-        reactor.connectTCP(address, port, f)
-        return controller.completed
+        if "MOV;" in filePath:
+            moveMessage.sendFile(filePath, address, port)
+        else:
+            controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
+            f = FileIOClientFactory(filePath, controller)
+            reactor.connectTCP(address, port, f)
+            return controller.completed
 
 if __name__ == "__main__":
     server = FileIOServerFactory('/home/student/OneDir/test_server')
@@ -315,3 +335,5 @@ if __name__ == "__main__":
     reactor.listenTCP(server.listen_port,server)
     print 'Listening on port',server.listen_port,'..'
     reactor.run()
+
+    #ServerReceiverProtocol().lineReceived('hello')

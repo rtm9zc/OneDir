@@ -17,6 +17,11 @@ class OneDir_Observer():
         self.observer = Observer()
         self.observer.schedule(self.event_handler, self.lm.oneDir, recursive=True)
         self.observer.start()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.observer.stop()
         self.observer.join()
 
 
