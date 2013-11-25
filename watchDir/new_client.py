@@ -4,6 +4,7 @@ from binascii import crc32
 import os
 import json
 import pprint
+import Queue
 
 from twisted.protocols import basic
 from twisted.internet.protocol import ServerFactory
@@ -237,6 +238,7 @@ class LocalMachine(ServerFactory):
         self.listen_port = listen_port
 
         self.isServer = False
+        self.backlog = Queue.Queue()
 
         #reactor.listenTCP(listen_port, self)
         #reactor.run()

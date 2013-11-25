@@ -229,8 +229,6 @@ def transmitOne(path, address='localhost', port=1235,):
     reactor.connectTCP(address, port, f)
     return controller.completed
 
-
-
 class FileIOServerFactory(ServerFactory):
     """ file receiver factory """
     protocol = ServerReceiverProtocol

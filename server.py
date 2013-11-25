@@ -99,6 +99,7 @@ if __name__=='__main__':
     print 'Listening on port',test_server.port,'..'
     reactor.run()
     arrayQueue = Queue.Queue()
+
     thread = Thread(target = test_server.receive,
                     args = ("localhost", 21567, 4096, arrayQueue))
     while True:
