@@ -38,8 +38,9 @@ class OneDirHandler(FileSystemEventHandler):
         #Should tell server to change name on file (src_path) to (dest_path)
         source = event.src_path
         dest = event.dest_path
-
-        if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
+        if source.find(".enc") != -1:
+            return
+        elif source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File moved! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             print("Destination: " + dest)
@@ -50,7 +51,9 @@ class OneDirHandler(FileSystemEventHandler):
         #Called on making new file
         #Should send file over to server
         source = event.src_path
-        if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
+        if source.find(".enc") != -1:
+            return
+        elif source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File created! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
@@ -59,14 +62,18 @@ class OneDirHandler(FileSystemEventHandler):
         #Called on deletion of file/directory
         #Server should delete same file
         source = event.src_path
-        if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
+        if source.find(".enc") != -1:
+            return
+        elif source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File deleted! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
                 self.machine.deleted(source)
     def on_modified(self, event):
         source = event.src_path
-        if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
+        if source.find(".enc") != -1:
+            return
+        elif source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File modified! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
