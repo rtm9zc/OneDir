@@ -4,7 +4,7 @@ def adminFiles(path): #returns a string with all
                       #subdirectories, files, and sizes under path
     outstring = ''
     totalsize = 0
-    for dirname, dirnames, filenames in os.walk(os.getcwd()):
+    for dirname, dirnames, filenames in os.walk(path):
         # print path to all subdirectories first.
         outstring = outstring + "Subdirectories: \n"
         for subdirname in dirnames:
