@@ -1,5 +1,5 @@
 
-
+#editing renamed file causes server to crash?
 from binascii import crc32
 import os, json, pprint, datetime
 
@@ -65,7 +65,16 @@ class ServerReceiverProtocol(basic.LineReceiver):
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
         # Need to change to be able to handle files within subdirectories!!!
+        print "uploaddir---------->", uploaddir
+        print "os.path.basename----->", self.original_fname
+        #correctPath = self.original_fname.split(self.UsersToLM['KingGeorge'][1])
+        #scorrectPath = self.original_fname.split('test_user/')[1]
+        #sprint correctPath
+        #if not os.path.isdir(correctPath):
+        #    os.makedir(correctPath)
         self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
+        #self.outfilename = os.path.join(uploaddir, correctPath)
+
 
         if "MOV;" in line:
             os.unlink(self.outfilename)
@@ -226,7 +235,7 @@ class FileIOClientFactory(ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         """ """
-        print 'client connection failed'
+        print 'client connection failed!!!!'
         ClientFactory.clientConnectionFailed(self, connector, reason)
         self.controller.completed.errback(reason)
 
@@ -314,23 +323,27 @@ class FileIOServerFactory(ServerFactory):
         #transmitOne(filePath,port=self.send_port,address='localhost')
         #transmitOne(filePath, 'localhost',self.send_port)
         port = self.send_port
+
         if "MOV;" in filePath:
             moveMessage.sendFile(filePath, address, port)
         else:
             controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
             f = FileIOClientFactory(filePath, controller)
+            #print controller.completed.errback + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
             reactor.connectTCP(address, port, f)
+            #print controller.completed.errback()
             return controller.completed
 
 if __name__ == "__main__":
     server = FileIOServerFactory('/home/student/OneDir/test_server')
     # my laptop
     lm_one = LocalMachine('testUser', '/home/student/test_user2', address='127.0.0.1', send_port=1234, listen_port=1235)
-    # lab desktop
+    lm_two = LocalMachine('testUser', '/home/student/test_user', address='127.0.0.1', send_port=1234, listen_port=1235)
     #lm_two = LocalMachine('KingGeorge', '~/home/ajl3mp/OneDir', address='128.143.63.86', send_port=1234, listen_port=1235)
 
     server.addUser('KingGeorge', 'password')
     server.addLocalMachine('KingGeorge', lm_one)
+    server.addLocalMachine('KingGeorge', lm_two)
     print server.usersToLM
     reactor.listenTCP(server.listen_port,server)
     print 'Listening on port',server.listen_port,'..'
