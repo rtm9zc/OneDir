@@ -50,6 +50,17 @@ def sendData(userType, username, password):
     correctUsernameAndPassword = sock.recv(1024)
     correctUsernameAndPassword = str(correctUsernameAndPassword).strip()
 
+    if correctUsernameAndPassword == "True":
+        newPW = raw_input("Would you like to change your password (if yes enter the new password and if no enter N)?: ")
+
+        sock.sendall(newPW + "\n")
+        sock.recv(1024)
+        if newPW != "N":
+            print "Changed your password to: " + newPW
+
+
+
+
     if correctUsernameAndPassword == "True" and isAdminUser == "False":
 
         mac = get_mac()
@@ -69,7 +80,7 @@ def sendData(userType, username, password):
 
     #sock.close()
 
-    return (correctUsernameAndPassword, isAdminUser)
+    return {"correctUsernameAndPassword" : correctUsernameAndPassword, "isAdminUser" : isAdminUser, "filePath" : filePath}
 
 
 def adminInput():
@@ -124,7 +135,7 @@ def adminInput():
 
 
 def syncOptions(currentState):
-    global syncState
+
     if currentState == "on":
         syncResponse = raw_input("Synchronization is on, would you like to turn synchronization off (enter yes if so)?")
 
@@ -142,18 +153,20 @@ def syncOptions(currentState):
 
         syncState = "on"
 
+    return syncState
+
 # add server IP Address as a command line argument
 
 if __name__ == "__main__":
 
-    global syncState
-    #syncState = "on"
-    global userName
 
-    global watchMachine
-    global listenMachine
+    syncState = "on"
 
-    global filePath
+
+    #global watchMachine
+    #global listenMachine
+
+
 
     usertype = raw_input("Enter 1 if you are a new user and 2 if you are a returning user: ")
 
@@ -165,13 +178,17 @@ if __name__ == "__main__":
         userName = newUsername
 
         #send a newuser marker to the server
-        sendData(usertype, newUsername, newPassword)
+        dictFromInput = sendData(usertype, newUsername, newPassword)
+
+        isAdminUser = dictFromInput["isAdminUser"]
+        correctEntry = dictFromInput["correctUsernameAndPassword"]
+        filePath = dictFromInput["filePath"]
 
         # right here we need access to the filepath/directory of THIS user
         # need server IP address --> can be a command line argument (see above)
 
         # change for whatever user / file path is acquired above
-        watchMachine.oneDir = filePath
+        watchMachine.oneDir = dictFromInput["filePath"]
         watchMachine.username = userName
 
         # watch_thread = threading.Thread(target=OneDog.startWatching)
@@ -186,14 +203,13 @@ if __name__ == "__main__":
         reactor.listenTCP(listenMachine.listen_port, listenMachine)
 
         listen_process = Process(target=reactor.run)
-        listen_process.start()
 
         # listen_thread = threading.Thread(target=reactor.run)
         # listen_thread.daemon = True
         # listen_thread.start
 
         while True:
-            syncOptions(syncState)
+            syncState = syncOptions(syncState)
 
     else:
         usertype = "olduser"
@@ -205,7 +221,11 @@ if __name__ == "__main__":
         #if it matches the information found on the server: run clientMain.py and new_client.py
 
         #send the server a returning user marker
-        correctEntry, isAdminUser = sendData(usertype, returningUsername, returningPassword)
+        dictFromInput = sendData(usertype, returningUsername, returningPassword)
+
+        isAdminUser = dictFromInput["isAdminUser"]
+        correctEntry = dictFromInput["correctUsernameAndPassword"]
+        filePath = dictFromInput["filePath"]
 
         if (isAdminUser == "True" and correctEntry == "True"):
             adminInput()
@@ -233,10 +253,9 @@ if __name__ == "__main__":
             # listen_thread.start
 
             listen_process = Process(target=reactor.run)
-            listen_process.start()
 
             while True:
-                syncOptions(syncState)
+                syncState = syncOptions(syncState)
 
         if (correctEntry == "False"):
             print "Incorrect username or password"

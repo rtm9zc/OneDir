@@ -24,6 +24,7 @@ class TransferCancelled(Exception):
     """ Exception for a user cancelling a transfer """
     pass
 
+
 class ServerReceiverProtocol(basic.LineReceiver):
     """ File Receiver """
 
@@ -32,21 +33,34 @@ class ServerReceiverProtocol(basic.LineReceiver):
         self.outfile = None
         self.remain = 0
         self.crc = 0
+        self.isFile = True
 
     def lineReceived(self, line):
         """ """
         print ' ~ lineReceived:\n\t', line
-        self.instruction = json.loads(line)
-        self.instruction.update(dict(client=self.transport.getPeer().host))
-        self.size = self.instruction['file_size']
-        self.original_fname = self.instruction.get('original_file_path',
-                                                   'not given by client')
+
+        self.isFile = True
 
         # get username via ip address
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
 
         # Create the upload directory if not already present
         uploaddir = os.path.join(self.factory.dir_path, clientUsername)
+
+        if line[0:6] == 'delete':
+            originalPath = line[6:]
+            pathToDelete = os.path.join(uploaddir, os.path.basename(originalPath))
+            os.remove(pathToDelete)
+            self.isFile = False
+            self.transport.loseConnection()
+            return
+
+        self.instruction = json.loads(line)
+        self.instruction.update(dict(client=self.transport.getPeer().host))
+        self.size = self.instruction['file_size']
+        self.original_fname = self.instruction.get('original_file_path',
+                                                   'not given by client')
+
 
         print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
@@ -83,32 +97,35 @@ class ServerReceiverProtocol(basic.LineReceiver):
         print ' * ',self.transport.getPeer()
 
     def connectionLost(self, reason):
-        """ """
-        basic.LineReceiver.connectionLost(self, reason)
-        print ' - connectionLost'
-        if self.outfile:
-            self.outfile.close()
-            # Problem uploading - tmpfile will be discarded
-        if self.remain != 0:
-            print str(self.remain) + ')!=0'
-            remove_base = '--> removing tmpfile@'
-            if self.remain<0:
-                reason = ' .. file moved too much'
-            if self.remain>0:
-                reason = ' .. file moved too little'
-            print remove_base + self.outfilename + reason
-            os.remove(self.outfilename)
 
-        # Success uploading - tmpfile will be saved to disk.
-        else:
+        if self.isFile == False:
+            print 'connection lost'
+        if self.isFile == True:
+            basic.LineReceiver.connectionLost(self, reason)
+            print ' - connectionLost'
+            if self.outfile:
+                self.outfile.close()
+                # Problem uploading - tmpfile will be discarded
+            if self.remain != 0:
+                print str(self.remain) + ')!=0'
+                remove_base = '--> removing tmpfile@'
+                if self.remain<0:
+                    reason = ' .. file moved too much'
+                if self.remain>0:
+                    reason = ' .. file moved too little'
+                print remove_base + self.outfilename + reason
+                os.remove(self.outfilename)
 
-            user_address = self.transport.getPeer().host
+            # Success uploading - tmpfile will be saved to disk.
+            else:
 
-            self.factory.sendToMachines(user_address, self.outfilename)
+                #user_address = self.transport.getPeer().host
 
-            print '\n--> finished saving upload@' + self.outfilename
+                #self.factory.sendToMachines(user_address, self.outfilename)
 
-            #self.factory.testSendMachines(user_address)
+                print '\n--> finished saving upload@' + self.outfilename
+
+                #self.factory.testSendMachines(user_address)
 
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -269,6 +286,7 @@ class FileIOServerFactory(ServerFactory):
         f = FileIOClientFactory(filePath, controller)
         reactor.connectTCP(address, port, f)
         return controller.completed
+
 
 if __name__ == "__main__":
 
