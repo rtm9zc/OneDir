@@ -58,6 +58,9 @@ class OneDirHandler(FileSystemEventHandler):
             print("File created! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
+                if ".enc" not in source:
+                    fileCrypto.encrypt_file('somekey', source)
+                    source = source + ".enc"
                 self.machine.created(source)
     def on_deleted(self, event):
         #Called on deletion of file/directory
