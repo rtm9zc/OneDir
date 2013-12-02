@@ -4,6 +4,10 @@ from multiprocessing import Process
 from twisted.internet import reactor
 import sendFile
 import moveMessage
+import os
+
+def getExtension(filename):
+    return os.path.splitext(filename)[-1].lower()
 
 class LocalMachine():
 
@@ -21,7 +25,8 @@ class LocalMachine():
         reactor.run(installSignalHandlers=0)
 
     def transmitDelete(self, source):
-        moveMessage.sendFile(source,self.address,self.port)
+        filePath = 'delete' + source
+        moveMessage.sendMessage(filePath,self.address,self.port)
         print 'Dialing on port',self.port,'..'
         reactor.run(installSignalHandlers=0)
 
@@ -35,18 +40,20 @@ class LocalMachine():
     #Will be handled by a listener method on the server
     def moved(self, fileSource, destination):
         #print "_____MOVE______"
-        fileData = "MOV;" + fileSource
 
         p = Process(target=self.transmitFile, args=(destination,))
         p.start()
-        p2 = Process(target=self.transmitDelete, args=(fileData,))
-        p2.start()
+        if getExtension(fileSource) != '.tmp':
+            p2 = Process(target=self.transmitDelete, args=(fileSource,))
+            p2.start()
 
     def deleted(self, fileSource):
         #print "_____DELETE______"
         fileData = [self.username, self.address, "del", fileSource]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response
+        p = Process(target=self.transmitDelete, args=(fileSource,))
+        p.start()
     def modified(self, fileSource):
         #print "_____MOD______"
         fileData = [self.username, self.address, "mod", fileSource]

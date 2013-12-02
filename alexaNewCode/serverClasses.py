@@ -22,6 +22,24 @@ class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
 
+    def adminFiles(path): #returns a string with all
+                      #subdirectories, files, and sizes under path
+        outstring = ''
+        totalsize = 0
+        for dirname, dirnames, filenames in os.walk(path):
+            # print path to all subdirectories first.
+            outstring = outstring + "Subdirectories: \n"
+            for subdirname in dirnames:
+                outstring = outstring + os.path.join(dirname, subdirname) + '\n'
+            outstring = outstring + "\nFiles: \n"
+            # print path to all filenames.
+            for filename in filenames:
+                outstring = outstring + os.path.join(dirname, filename) + '\n'
+                outstring = outstring + "Size (bytes): " + str(os.path.getsize(filename)) +'\n'
+                totalsize += os.path.getsize(filename)
+        outstring = outstring + "\nTotal size (bytes): " + str(totalsize)
+        return outstring
+
     #override the handle method to allow for back and forth communication
     def handle(self):
         # self.request is the TCP socket connected to the client
@@ -43,8 +61,9 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self.password = str(self.password)
 
 
-        if (self.usertype == "newuser"):
+        if self.usertype == "newuser":
             self.server.twisted_server.usersToPW[self.username] = self.password
+            print self.server.twisted_server.usersToPW
             self.server.twisted_server.usersToLM[self.username] = []
             print self.server.twisted_server.usersToPW
 
@@ -58,6 +77,16 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
             correctUserandPW = "False"
 
         self.request.sendall(correctUserandPW + "\n")
+
+        if correctUserandPW == "True":
+            self.newPW =  self.request.recv(1024).strip()
+            self.newPW = str(self.newPW)
+            if self.newPW != "N":
+                self.server.twisted_server.usersToPW[self.username] = self.newPW
+                print self.server.twisted_server.usersToPW
+
+            booleanVal = "True"
+            self.request.sendall(booleanVal + "\n")
 
 
         if correctUserandPW == "True" and isAdminUser == "False":
@@ -101,11 +130,12 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     adminResults = str(self.server.twisted_server.usersToPW)
                     self.request.sendall(adminResults + "\n")
                 if (self.adminUserRequest == "2"):
-                    #number of total files and filesizes stored as a string and put into self.adminResults
-                    self.request.sendall(adminResults + "\n")
+                    files = adminFiles("SERVER PATH")
+                    self.request.sendall(files + "\n")
                 if (self.adminUserRequest == "3"):
                     #number of per user total files and filesizes stored as a string and put into self.adminResults
-                    self.request.sendall(adminResults + "\n")
+                    files = adminFiles("SERVER PATH")
+                    self.request.sendall(files + "\n")
                 if (self.adminUserRequest == "4"):
                     self.request.sendall(trueResponse + "\n")
                     usernameToDelete = self.request.recv(1024).strip()
