@@ -1,0 +1,12 @@
+Connection made, File: /home/student/OneDir/test_user/renamee.txt
+Connection made, File: /home/student/OneDir/test_user/renamee.txt
+Connection made, File: /home/student/OneDir/test_user/renamee.txt
+Connection made, File: /home/student/OneDir/test_user/renamee.txt
+Connection lost: [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+]
+Connection lost: [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+]
+Connection lost: [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+]
+Connection lost: [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+]

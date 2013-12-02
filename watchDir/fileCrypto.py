@@ -43,3 +43,5 @@ def decrypt_file(password, in_filename, out_filename=None, chunksize=24*1024):
                 outfile.write(decryptor.decrypt(chunk))
 
             outfile.truncate(origsize)
+
+encrypt_file('somekey', "watchDir.py")

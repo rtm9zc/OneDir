@@ -166,5 +166,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     self.request.sendall(trueResponse + "\n")
                 if (self.adminUserRequest == "7"):
                     #get history of connections involving synchronization stored as a string and put into self.adminResults
-
+                    with open ("log.txt", "r") as myfile:
+                        adminResults=myfile.read().replace('\n', '')
                     self.request.sendall(adminResults + "\n")

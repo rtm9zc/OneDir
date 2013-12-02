@@ -108,7 +108,8 @@ class ClientReceiverProtocol(basic.LineReceiver):
             if self.remain>0:
                 reason = ' .. file moved too little'
             print remove_base + self.outfilename + reason
-            os.remove(self.outfilename)
+            if "MOV;" not in self.outfilename:
+                os.remove(self.outfilename)
 
         # Success uploading - tmpfile will be saved to disk.
         else:
