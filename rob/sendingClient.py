@@ -4,19 +4,15 @@ from multiprocessing import Process
 from twisted.internet import reactor
 import sendFile
 import moveMessage
-import os
 
-def getExtension(filename):
-    return os.path.splitext(filename)[-1].lower()
+
 
 class LocalMachine():
 
-    def __init__(self, username, directory, address):
+    def __init__(self, username, directory, address='localhost'):
         self.username = username
         self.oneDir = directory
-        # address of server to send to
         self.address = address
-        # port to send files on (from client side)
         self.port = 1234
 
     def transmitFile(self, source):
@@ -25,10 +21,27 @@ class LocalMachine():
         reactor.run(installSignalHandlers=0)
 
     def transmitDelete(self, source):
-        filePath = 'delete' + source
-        moveMessage.sendMessage(filePath,self.address,self.port)
+        moveMessage.sendFile(source,self.address,self.port)
         print 'Dialing on port',self.port,'..'
         reactor.run(installSignalHandlers=0)
+    #
+    #def sendArray(self, array):
+    #    host = "localhost"
+    #    #port = self.port
+    #    buf = 4096
+    #    addr = (host,self.port)
+    #
+    #    # Create socket
+    #    UDPSock = socket(AF_INET,SOCK_DGRAM)
+    #
+    #    # Send the array
+    #    while (1):
+    #        if(UDPSock.sendto( pickle.dumps(array), addr)):
+    #            print "Sending message"
+    #            break
+    #
+    #    # Close socket
+    #    UDPSock.close()
 
     def getUsername(self):
         return self.username
@@ -40,20 +53,19 @@ class LocalMachine():
     #Will be handled by a listener method on the server
     def moved(self, fileSource, destination):
         #print "_____MOVE______"
+        fileData = "MOV;" + fileSource
+        #self.sendArray(fileData)
 
         p = Process(target=self.transmitFile, args=(destination,))
         p.start()
-        if getExtension(fileSource) != '.tmp':
-            p2 = Process(target=self.transmitDelete, args=(fileSource,))
-            p2.start()
+        p2 = Process(target=self.transmitDelete, args=(fileData,))
+        p2.start()
 
     def deleted(self, fileSource):
         #print "_____DELETE______"
         fileData = [self.username, self.address, "del", fileSource]
         #self.sendArray(fileData)
         #some shit to listen for a confirming response
-        p = Process(target=self.transmitDelete, args=(fileSource,))
-        p.start()
     def modified(self, fileSource):
         #print "_____MOD______"
         fileData = [self.username, self.address, "mod", fileSource]

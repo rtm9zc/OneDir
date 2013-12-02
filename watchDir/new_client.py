@@ -114,6 +114,7 @@ class ClientReceiverProtocol(basic.LineReceiver):
         # Success uploading - tmpfile will be saved to disk.
         else:
                 fileCrypto.decrypt_file('somekey', self.outfilename)
+                os.remove(self.outfilename)
                 print '\n--> finished saving upload@' + self.outfilename
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -128,8 +129,8 @@ class FileIOClient(basic.LineReceiver):
     def __init__(self, path, controller):
         """ """
         print "in FileIOClient"
-
         self.path = path
+
         self.controller = controller
 
         self.infile = open(self.path, 'rb')
@@ -201,6 +202,7 @@ class FileIOClientFactory(ClientFactory):
         """ """
         print 'in FileIOClientFactory class'
         self.path = path
+
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
@@ -211,7 +213,8 @@ class FileIOClientFactory(ClientFactory):
 
     def buildProtocol(self, addr):
         """ """
-        print ' + building protocol'
+        print ' + building protocol~!'
+
         p = self.protocol(self.path, self.controller)
         p.factory = self
         return p
@@ -253,8 +256,6 @@ class LocalMachine(ServerFactory):
         #address = 'localhost'
         address = '127.0.0.1'
         port = self.send_port
-        fileCrypto.encrypt_file('somekey', filePath)
-        filePath = filePath + '.enc'
         controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
         f = FileIOClientFactory(filePath, controller)
         reactor.connectTCP(address, port, f)
@@ -293,3 +294,4 @@ if __name__ == "__main__":
     reactor.listenTCP(lm_one.listen_port, lm_one)
     print 'Listening on port',lm_one.listen_port,'..'
     reactor.run()
+

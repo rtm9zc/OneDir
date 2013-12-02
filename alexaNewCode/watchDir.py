@@ -1,6 +1,10 @@
 import time
+import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
+def getExtension(filename):
+    return os.path.splitext(filename)[-1].lower()
 
 class OneDir_Observer():
 
@@ -29,6 +33,7 @@ class OneDirHandler(FileSystemEventHandler):
     def __init__(self, local):
         self.machine = local
 
+
     def on_moved(self, event):
         #Only really called on name change
         #Should tell server to change name on file (src_path) to (dest_path)
@@ -40,7 +45,8 @@ class OneDirHandler(FileSystemEventHandler):
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             print("Destination: " + dest)
             if not event.is_directory:
-                self.machine.moved(source, dest)
+                if getExtension(source) != '.DS_Store':
+                    self.machine.moved(source, dest)
 
     def on_created(self, event):
         #Called on making new file
@@ -50,7 +56,9 @@ class OneDirHandler(FileSystemEventHandler):
             print("File created! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                self.machine.created(source)
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp':
+                    self.machine.created(source)
+
     def on_deleted(self, event):
         #Called on deletion of file/directory
         #Server should delete same file
@@ -59,12 +67,13 @@ class OneDirHandler(FileSystemEventHandler):
             print("File deleted! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                self.machine.deleted(source)
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp':
+                    self.machine.deleted(source)
     def on_modified(self, event):
         source = event.src_path
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File modified! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                print 'calling modified method'
-                self.machine.modified(source)
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp':
+                    self.machine.modified(source)

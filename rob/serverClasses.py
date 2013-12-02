@@ -15,30 +15,11 @@ class BabyLocalMachine():
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 
     def __init__(self, server_address, HandlerClass, twisted_server):
-        self.allow_reuse_address = True
         SocketServer.ThreadingTCPServer.__init__(self, server_address, HandlerClass)
         self.twisted_server = twisted_server
 
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
-
-    def adminFiles(path): #returns a string with all
-                      #subdirectories, files, and sizes under path
-        outstring = ''
-        totalsize = 0
-        for dirname, dirnames, filenames in os.walk(path):
-            # print path to all subdirectories first.
-            outstring = outstring + "Subdirectories: \n"
-            for subdirname in dirnames:
-                outstring = outstring + os.path.join(dirname, subdirname) + '\n'
-            outstring = outstring + "\nFiles: \n"
-            # print path to all filenames.
-            for filename in filenames:
-                outstring = outstring + os.path.join(dirname, filename) + '\n'
-                outstring = outstring + "Size (bytes): " + str(os.path.getsize(filename)) +'\n'
-                totalsize += os.path.getsize(filename)
-        outstring = outstring + "\nTotal size (bytes): " + str(totalsize)
-        return outstring
 
     #override the handle method to allow for back and forth communication
     def handle(self):
@@ -61,14 +42,13 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self.password = str(self.password)
 
 
-        if self.usertype == "newuser":
+        if (self.usertype == "newuser"):
             self.server.twisted_server.usersToPW[self.username] = self.password
-            print self.server.twisted_server.usersToPW
             self.server.twisted_server.usersToLM[self.username] = []
-            print self.server.twisted_server.usersToPW
+            print self.server.usersToPW
 
             # create new user directory
-            #os.makedirs(os.path.join(self.server.twisted_server.dir_path, self.username))
+            os.makedirs(os.path.join(self.server.twisted_server.dir_path, self.username))
 
 
         if self.password == self.server.twisted_server.usersToPW[self.username]:
@@ -77,16 +57,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
             correctUserandPW = "False"
 
         self.request.sendall(correctUserandPW + "\n")
-
-        if correctUserandPW == "True":
-            self.newPW =  self.request.recv(1024).strip()
-            self.newPW = str(self.newPW)
-            if self.newPW != "N":
-                self.server.twisted_server.usersToPW[self.username] = self.newPW
-                print self.server.twisted_server.usersToPW
-
-            booleanVal = "True"
-            self.request.sendall(booleanVal + "\n")
 
 
         if correctUserandPW == "True" and isAdminUser == "False":
@@ -98,7 +68,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
             isLocalMachine = "False"
             for localM in self.server.twisted_server.usersToLM[self.username]:
                 if self.macAddress == localM.macAddress:
-                    isLocalMachine = localM.pathToDirectory
+                    isLocalMachine = "True"
                     localM.ipAddress = self.client_address[0]
 
             self.request.sendall(isLocalMachine + "\n")
@@ -130,12 +100,11 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     adminResults = str(self.server.twisted_server.usersToPW)
                     self.request.sendall(adminResults + "\n")
                 if (self.adminUserRequest == "2"):
-                    files = adminFiles("SERVER PATH")
-                    self.request.sendall(files + "\n")
+                    #number of total files and filesizes stored as a string and put into self.adminResults
+                    self.request.sendall(adminResults + "\n")
                 if (self.adminUserRequest == "3"):
                     #number of per user total files and filesizes stored as a string and put into self.adminResults
-                    files = adminFiles("SERVER PATH")
-                    self.request.sendall(files + "\n")
+                    self.request.sendall(adminResults + "\n")
                 if (self.adminUserRequest == "4"):
                     self.request.sendall(trueResponse + "\n")
                     usernameToDelete = self.request.recv(1024).strip()

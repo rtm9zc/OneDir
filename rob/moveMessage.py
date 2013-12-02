@@ -1,6 +1,3 @@
-import os, json
-import fileCrypto
-
 from twisted.protocols import basic
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
@@ -21,14 +18,6 @@ class FileIOClient(basic.LineReceiver):
         self.path = path
         self.controller = controller
 
-        self.infile = open(self.path, 'rb')
-        self.insize = os.stat(self.path).st_size
-
-        self.result = None
-        self.completed = False
-
-        self.controller.file_sent = 0
-        self.controller.file_size = self.insize
 
     def _monitor(self, data):
         """ """
@@ -57,15 +46,7 @@ class FileIOClient(basic.LineReceiver):
 
     def connectionMade(self):
         """ """
-        instruction = dict(file_size=self.insize,
-                           original_file_path=self.path)
-        instruction = json.dumps(instruction)
-        self.transport.write(instruction+'\r\n')
-        sender = FileSender()
-        sender.CHUNK_SIZE = 2 ** 16
-        d = sender.beginFileTransfer(self.infile, self.transport,
-                                     self._monitor)
-        d.addCallback(self.cbTransferCompleted)
+        self.sendLine(self.path)
 
     def connectionLost(self, reason):
         """
@@ -75,12 +56,7 @@ class FileIOClient(basic.LineReceiver):
         basic.LineReceiver.connectionLost(self, reason)
         print ' - connectionLost\n  * ', reason.getErrorMessage()
         print ' * finished with',self.path
-        self.infile.close()
-        if self.completed:
-            self.controller.completed.callback(self.result)
-        else:
-            self.controller.completed.errback(reason)
-            #reactor.stop()
+        reactor.stop()
 
 class FileIOClientFactory(ClientFactory):
     """ file sender factory """
@@ -91,9 +67,6 @@ class FileIOClientFactory(ClientFactory):
         """ """
         print 'in FileIOClientFactory class'
         self.path = path
-        if ".enc" not in path:
-            fileCrypto.encrypt_file('somekey', self.path)
-            self.path = self.path+ ".enc"
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):

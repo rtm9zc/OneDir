@@ -142,6 +142,8 @@ def syncOptions(currentState):
         # send message to server socket
         # server receives "off" message --> updates local machine sync status boolean
 
+
+
         syncState = "off"
 
     if currentState == "off":
