@@ -4,7 +4,7 @@ import StringIO
 class adminLog:
 
     def __init__(self):
-        #self.logStream= StringIO.StringIO()
+        ##self.logStream= StringIO.StringIO()
         logging.basicConfig(format='[%(asctime)s %(name)s]: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO, file='log.txt')
         self.logger = logging.getLogger('logger')
         handler = logging.FileHandler('log.txt')
