@@ -1,33 +1,12 @@
 import os
-import threading
 import sys
 import socket
 from uuid import getnode as get_mac
 
-from multiprocessing import Process
-
-#from clientMain import *
-from new_client import *
-
-from watchDir import OneDir_Observer
-from sendingClient import LocalMachine
-
-
-
-#HOST needs to be changed to whatever the server address is (command line argument)
 
 HOST, PORT = "localhost", 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.connect((HOST, PORT))
-
-syncState = 'on'
-filePath = 'False'
-userName = 'user'
-
-watchMachine = LocalMachine('TestUser', 'TestDirectory', HOST)
-OneDog = OneDir_Observer(watchMachine)
-listenMachine = ListenerMachine('TestDirectory', listen_port=1235)
 
 def sendData(userType, username, password):
     #sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,9 +14,6 @@ def sendData(userType, username, password):
 
     # Connect to server and send data
     #sock.connect((HOST, PORT))
-
-    global filePath
-    global userName
 
     sock.sendall(usertype + "\n")
     response1 = sock.recv(1024)
@@ -50,37 +26,25 @@ def sendData(userType, username, password):
     correctUsernameAndPassword = sock.recv(1024)
     correctUsernameAndPassword = str(correctUsernameAndPassword).strip()
 
-    if correctUsernameAndPassword == "True":
-        newPW = raw_input("Would you like to change your password (if yes enter the new password and if no enter N)?: ")
-
-        sock.sendall(newPW + "\n")
-        sock.recv(1024)
-        if newPW != "N":
-            print "Changed your password to: " + newPW
-
-
-
-
     if correctUsernameAndPassword == "True" and isAdminUser == "False":
 
         mac = get_mac()
         mac = str(mac)
         sock.sendall(mac +"\n")
-        filePath = sock.recv(1024)
-        filePath = str(filePath).strip()
+        isLocalMachine = sock.recv(1024)
+        isLocalMachine = str(isLocalMachine).strip()
 
-        if filePath == "False":
-            filePath = raw_input("Enter the new filepath where you would like your OneDir folder to be stored: ")
+        if isLocalMachine == "False":
+            filePath = raw_input("Enter the filepath where you would like your OneDir folder to be stored: ")
             sock.sendall(filePath + "\n")
             response1 = sock.recv(1024)
 
-            # mkdirs??????
-            os.mkdir(filePath)
+            #os.mkdir(filePath)
 
 
     #sock.close()
 
-    return {"correctUsernameAndPassword" : correctUsernameAndPassword, "isAdminUser" : isAdminUser, "filePath" : filePath}
+    return (correctUsernameAndPassword, isAdminUser)
 
 
 def adminInput():
@@ -135,39 +99,33 @@ def adminInput():
 
 
 def syncOptions(currentState):
-
+    global syncState
     if currentState == "on":
         syncResponse = raw_input("Synchronization is on, would you like to turn synchronization off (enter yes if so)?")
 
-        # send message to server socket
-        # server receives "off" message --> updates local machine sync status boolean
+        #stop running clientMain.py and new_client.py
+        #the below might not work!!!!!!!!
+        #os s.system("killall clientMain")
+        #os.system("killall new_client")
 
         syncState = "off"
 
     if currentState == "off":
         syncResponse = raw_input("Synchronization is off, would you like to turn synchronization on (enter yes if so)?")
 
-        # send message to server socket
-        # server receives "on" message --> updates local machine sync status boolean syncOn to True
-        # files
+        #resume running of clientMain.py and new_client.py
+        os.system("python clientMain.py")
+        os.system("python new_client.py")
 
         syncState = "on"
 
-    return syncState
 
-# add server IP Address as a command line argument
+
 
 if __name__ == "__main__":
 
-
+    global syncState
     syncState = "on"
-
-
-    #global watchMachine
-    #global listenMachine
-
-
-
     usertype = raw_input("Enter 1 if you are a new user and 2 if you are a returning user: ")
 
     if usertype == "1":
@@ -175,87 +133,41 @@ if __name__ == "__main__":
         newUsername = raw_input("Please enter the new username: ")
         newPassword = raw_input("Please enter the new password: ")
 
-        userName = newUsername
+        #run clientMain.py and new_client.py
+        os.system("python clientMain.py")
+        os.system("python new_client.py")
+
 
         #send a newuser marker to the server
-        dictFromInput = sendData(usertype, newUsername, newPassword)
+        sendData(usertype, newUsername, newPassword)
 
-        isAdminUser = dictFromInput["isAdminUser"]
-        correctEntry = dictFromInput["correctUsernameAndPassword"]
-        filePath = dictFromInput["filePath"]
 
-        # right here we need access to the filepath/directory of THIS user
-        # need server IP address --> can be a command line argument (see above)
-
-        # change for whatever user / file path is acquired above
-        watchMachine.oneDir = dictFromInput["filePath"]
-        watchMachine.username = userName
-
-        # watch_thread = threading.Thread(target=OneDog.startWatching)
-        # watch_thread.daemon = True
-        # watch_thread.start
-
-        watch_process = Process(target=OneDog.startWatching)
-        watch_process.start()
-
-        # port = whichever port we determine will be the client listening port (1235?)
-        listenMachine.dir_path = filePath
-        reactor.listenTCP(listenMachine.listen_port, listenMachine)
-
-        listen_process = Process(target=reactor.run)
-
-        # listen_thread = threading.Thread(target=reactor.run)
-        # listen_thread.daemon = True
-        # listen_thread.start
 
         while True:
-            syncState = syncOptions(syncState)
+            syncOptions(syncState)
+
 
     else:
         usertype = "olduser"
         returningUsername = raw_input("Please enter your username: ")
         returningPassword = raw_input("Please enter your password: ")
 
-        userName = returningUsername
 
         #if it matches the information found on the server: run clientMain.py and new_client.py
 
         #send the server a returning user marker
-        dictFromInput = sendData(usertype, returningUsername, returningPassword)
-
-        isAdminUser = dictFromInput["isAdminUser"]
-        correctEntry = dictFromInput["correctUsernameAndPassword"]
-        filePath = dictFromInput["filePath"]
+        correctEntry, isAdminUser = sendData(usertype, returningUsername, returningPassword)
 
         if (isAdminUser == "True" and correctEntry == "True"):
             adminInput()
 
         if (isAdminUser == "False" and correctEntry == "True"):
 
-            # change for whatever user / file path is acquired above
-            watchMachine.oneDir = filePath
-            watchMachine.username = userName
-            OneDog.lm.oneDir = filePath
-            OneDog.lm.username = userName
-
-            watch_process = Process(target=OneDog.startWatching)
-            watch_process.start()
-
-            # watch_thread = threading.Thread(target=OneDog.startWatching)
-            # watch_thread.daemon = True
-            # watch_thread.start
-
-            # port = whichever port we determine will be the client listening port (1235?)
-            listenMachine.dir_path = filePath
-            reactor.listenTCP(listenMachine.listen_port, listenMachine)
-            # listen_thread = threading.Thread(target=reactor.run)
-            # listen_thread.daemon = True
-            # listen_thread.start
-
-            listen_process = Process(target=reactor.run)
+            os.system("python clientMain.py")
+            os.system("python new_client.py")
 
             while True:
-                syncState = syncOptions(syncState)
+                syncOptions(syncState)
 
         if (correctEntry == "False"):
             print "Incorrect username or password"
