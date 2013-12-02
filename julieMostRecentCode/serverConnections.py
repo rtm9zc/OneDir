@@ -1,5 +1,6 @@
 
 from serverClasses import *
+import sys
 
 from multiprocessing import Process
 
@@ -213,7 +214,7 @@ class FileIOClientFactory(ClientFactory):
         return p
 
 
-def transmitOne(path, address='localhost', port=1235,):
+def transmitOne(path, address=str(sys.argv[0]), port=1235,):
     """ helper for file transmission """
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
@@ -226,7 +227,7 @@ class FileIOServerFactory(ServerFactory):
     """ file receiver factory """
     protocol = ServerReceiverProtocol
 
-    def __init__(self, filePath, address='localhost', send_port=1235, listen_port=1234):
+    def __init__(self, filePath, address=str(sys.argv[0]), send_port=1235, listen_port=1234):
         """ """
         # server filepath
         self.dir_path = filePath
@@ -238,7 +239,7 @@ class FileIOServerFactory(ServerFactory):
 
         self.adminUser = ["admin"]
         self.usersToPW = {"admin": "pw", "alexa": "14"}
-        adminMachine = BabyLocalMachine("admin", "1", "localhost", "path")
+        adminMachine = BabyLocalMachine("admin", "1", str(sys.argv[0]), "path")
         self.usersToLM = {"admin": [adminMachine]}
 
 
@@ -272,9 +273,9 @@ class FileIOServerFactory(ServerFactory):
 
 if __name__ == "__main__":
 
-    HOST, PORT = "localhost", 9999
+    HOST, PORT = sys.argv[0], 9999
 
-    twisted_server = FileIOServerFactory('/Users/alowman/TestServer')
+    twisted_server = FileIOServerFactory(str(sys.argv[1]))
 
     # Create the server, binding to localhost on port 9999
     socket_server = ThreadedTCPServer((HOST, PORT), MyTCPHandler, twisted_server)
