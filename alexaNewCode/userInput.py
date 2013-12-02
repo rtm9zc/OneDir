@@ -18,6 +18,7 @@ from sendingClient import LocalMachine
 
 HOST, PORT = "localhost", 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.connect((HOST, PORT))
 
 syncState = 'on'
@@ -184,7 +185,7 @@ if __name__ == "__main__":
         listenMachine.dir_path = filePath
         reactor.listenTCP(listenMachine.listen_port, listenMachine)
 
-        listen_process = Process(target=reactor.listenTCP, args=(listenMachine.listen_port, listenMachine))
+        listen_process = Process(target=reactor.run)
         listen_process.start()
 
         # listen_thread = threading.Thread(target=reactor.run)
@@ -231,7 +232,7 @@ if __name__ == "__main__":
             # listen_thread.daemon = True
             # listen_thread.start
 
-            listen_process = Process(target=reactor.listenTCP, args=(listenMachine.listen_port, listenMachine))
+            listen_process = Process(target=reactor.run)
             listen_process.start()
 
             while True:
