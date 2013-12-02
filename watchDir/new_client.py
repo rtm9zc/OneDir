@@ -5,6 +5,7 @@ import os
 import json
 import pprint
 import Queue
+import fileCrypto
 
 from twisted.protocols import basic
 from twisted.internet.protocol import ServerFactory
@@ -111,7 +112,7 @@ class ClientReceiverProtocol(basic.LineReceiver):
 
         # Success uploading - tmpfile will be saved to disk.
         else:
-
+                fileCrypto.decrypt_file('somekey', self.outfilename)
                 print '\n--> finished saving upload@' + self.outfilename
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -251,6 +252,8 @@ class LocalMachine(ServerFactory):
         #address = 'localhost'
         address = '127.0.0.1'
         port = self.send_port
+        fileCrypto.encrypt_file('somekey', filePath)
+        filePath = filePath + '.enc'
         controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
         f = FileIOClientFactory(filePath, controller)
         reactor.connectTCP(address, port, f)
@@ -284,7 +287,7 @@ class LocalMachine(ServerFactory):
 
 if __name__ == "__main__":
 
-    lm_one = LocalMachine('KingGeorge', '/home/student/OneDir/test_user2', address='127.0.0.1', send_port=1234, listen_port=1235)
+    lm_one = LocalMachine('KingGeorge', os.getcwd(), address='127.0.0.1', send_port=1234, listen_port=1235)
 
     reactor.listenTCP(lm_one.listen_port, lm_one)
     print 'Listening on port',lm_one.listen_port,'..'

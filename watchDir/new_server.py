@@ -2,6 +2,7 @@
 
 from binascii import crc32
 import os, json, pprint, datetime
+import fileCrypto
 
 from twisted.protocols import basic
 from twisted.internet import protocol
@@ -131,6 +132,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
             print 'about to call sendToMachines()'
 
             self.factory.sendToMachines(user_address, self.outfilename)
+            fileCrypto.decrypt_file('somekey', self.outfilename)
+            os.remove(self.outfilename)
 
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -317,15 +320,19 @@ class FileIOServerFactory(ServerFactory):
         if "MOV;" in filePath:
             moveMessage.sendFile(filePath, address, port)
         else:
+            if ".enc" not in filePath:
+                fileCrypto.encrypt_file('somekey', filePath)
+                filePath = filePath+ ".enc"
             controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
             f = FileIOClientFactory(filePath, controller)
             reactor.connectTCP(address, port, f)
+            os.remove(filePath)
             return controller.completed
 
 if __name__ == "__main__":
-    server = FileIOServerFactory('/home/student/OneDir/test_server')
+    server = FileIOServerFactory(os.getcwd() + "/shit")
     # my laptop
-    lm_one = LocalMachine('testUser', '/home/student/test_user2', address='127.0.0.1', send_port=1234, listen_port=1235)
+    lm_one = LocalMachine('testUser', os.getcwd(), address='127.0.0.1', send_port=1234, listen_port=1235)
     # lab desktop
     #lm_two = LocalMachine('KingGeorge', '~/home/ajl3mp/OneDir', address='128.143.63.86', send_port=1234, listen_port=1235)
 
