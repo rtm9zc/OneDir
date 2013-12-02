@@ -16,7 +16,7 @@ from sendingClient import LocalMachine
 
 #HOST needs to be changed to whatever the server address is (command line argument)
 
-HOST, PORT = "localhost", 9999
+HOST, PORT = str(sys.argv[0]), 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.connect((HOST, PORT))
@@ -259,5 +259,4 @@ if __name__ == "__main__":
 
         if (correctEntry == "False"):
             print "Incorrect username or password"
-
 
