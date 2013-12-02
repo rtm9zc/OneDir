@@ -75,7 +75,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
         self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
         #self.outfilename = os.path.join(uploaddir, correctPath)
 
-
+    #
         if "MOV;" in line:
             os.unlink(self.outfilename)
             self.outfilename = "MOV;" + self.outfilename
