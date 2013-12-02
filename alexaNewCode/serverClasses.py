@@ -15,6 +15,7 @@ class BabyLocalMachine():
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 
     def __init__(self, server_address, HandlerClass, twisted_server):
+        self.allow_reuse_address = True
         SocketServer.ThreadingTCPServer.__init__(self, server_address, HandlerClass)
         self.twisted_server = twisted_server
 
