@@ -46,4 +46,4 @@ def decrypt_file(password, in_filename, out_filename=None, chunksize=24*1024):
 
             outfile.truncate(origsize)
 
-encrypt_file('somekey', "watchDir.py")
+#encrypt_file('somekey', "watchDir.py")
