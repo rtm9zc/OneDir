@@ -5,12 +5,11 @@ import threading
 
 class BabyLocalMachine():
 
-    def __init__(self, username, macAddress, ipAddress, pathToDirectory, syncState="on" port=1235):
+    def __init__(self, username, macAddress, ipAddress, pathToDirectory, port=1235):
         self.username = username
         self.macAddress = macAddress
         self.ipAddress = ipAddress
         self.pathToDirectory = pathToDirectory
-        self.syncState = syncState
         self.port = port
 
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
@@ -167,5 +166,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     self.request.sendall(trueResponse + "\n")
                 if (self.adminUserRequest == "7"):
                     #get history of connections involving synchronization stored as a string and put into self.adminResults
-
+                    with open ("log.txt", "r") as myfile:
+                        adminResults=myfile.read().replace('\n', '')
                     self.request.sendall(adminResults + "\n")

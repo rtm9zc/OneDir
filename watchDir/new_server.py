@@ -12,6 +12,7 @@ from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
+import logHandler
 
 from new_client import LocalMachine
 import moveMessage
@@ -30,6 +31,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
         self.outfile = None
         self.remain = 0
         self.crc = 0
+        self.log = logHandler.adminLog()
 
     def jsonStuff(self,line):
         self.instruction = json.loads(line)
@@ -60,6 +62,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             #if "MOV;" in line:
             self.original_fname = line.split(';')[1]
         # Create the upload directory if not already present
+        self.log.add('test this shit')
 
         uploaddir = self.factory.dir_path
         print " * Using upload dir:",uploaddir
@@ -132,7 +135,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             print 'about to call sendToMachines()'
 
             self.factory.sendToMachines(user_address, self.outfilename)
-            fileCrypto.decrypt_file('somekey', self.outfilename)
+            #fileCrypto.decrypt_file('somekey', self.outfilename)
             os.remove(self.outfilename)
 
 def fileinfo(fname):
