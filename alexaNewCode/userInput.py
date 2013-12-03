@@ -1,20 +1,12 @@
 import os
-import threading
 import sys
 import socket
 from uuid import getnode as get_mac
 
 from multiprocessing import Process
-
-#from clientMain import *
 from new_client import *
-
 from watchDir import OneDir_Observer
 from sendingClient import LocalMachine
-
-
-
-#HOST needs to be changed to whatever the server address is (command line argument)
 
 HOST, PORT = str(sys.argv[1]), 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,6 +20,8 @@ userName = 'user'
 watchMachine = LocalMachine('TestUser', 'TestDirectory', HOST)
 OneDog = OneDir_Observer(watchMachine)
 listenMachine = ListenerMachine('TestDirectory', listen_port=1235)
+
+watch_process = Process(target=OneDog.startWatching)
 
 def sendData(userType, username, password):
     #sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -74,7 +68,6 @@ def sendData(userType, username, password):
             sock.sendall(filePath + "\n")
             response1 = sock.recv(1024)
 
-            # mkdirs??????
             os.mkdir(filePath)
 
 
@@ -87,8 +80,8 @@ def adminInput():
     adminChoiceNum = "1"
     while adminChoiceNum != "0":
         adminChoiceNum = raw_input("Enter 1 if you would like to view all usernames and passwords, \n"
-                             "Enter 2 if you would like to see the number and size of files stored in total \n"
-                             "Enter 3 if you would like to see number and size of files stored per user \n"
+                             "Enter 2 if you would like to see info about the number and size of files for all users \n"
+                             "Enter 3 if you would like to see info about the number and size of files for a given user \n"
                              "Enter 4 if you would like to remove a user's account and their files \n"
                              "Enter 5 if you would like to remove a user's account but not their files \n"
                              "Enter 6 if you would like to change a user's password \n"
@@ -107,6 +100,13 @@ def adminInput():
             print "received"
             adminResults = str(adminResults).strip()
 
+            if adminChoiceNum == "3":
+                userToPrint = raw_input("Enter the username you would like info about: ")
+                userToPrint = str(userToPrint).strip()
+                sock.sendall(userToPrint + "\n")
+                adminResults = sock.recv(1024)
+                adminResults = str(adminResults).strip()
+
             if adminChoiceNum == "4" or adminChoiceNum == "5":
                 accountToDelete = raw_input("Enter the username for the account you wish to delete: ")
                 accountToDelete = str(accountToDelete).strip()
@@ -120,7 +120,7 @@ def adminInput():
                 sock.sendall(usernameForPWChange + "\n")
                 adminResults = sock.recv(1024)
 
-                passwordForPWChange = raw_input("Enter the username for the account for which you wish to change the password: ")
+                passwordForPWChange = raw_input("Enter the new password for the account you wish to change: ")
                 passwordForPWChange = str(passwordForPWChange).strip()
                 sock.sendall(passwordForPWChange + "\n")
                 adminResults = sock.recv(1024)
@@ -136,22 +136,42 @@ def adminInput():
 
 def syncOptions(currentState):
 
+    global watch_process
+
     if currentState == "on":
-        syncResponse = raw_input("Synchronization is on, would you like to turn synchronization off (enter yes if so)?")
+        syncResponse = raw_input("Synchronization is on. \nTo turn sync off, enter yes.\nTo log out, enter quit.\n")
 
-        # send message to server socket
-        # server receives "off" message --> updates local machine sync status boolean
+        if syncResponse == 'yes':
+            message = "syncOff"
+            #p = Process(target=moveMessage.sendMessage, args=(message, HOST, watchMachine.port,))
+            #p.start()
+            watchMachine.sendMessage(message)
+            watch_process.terminate()
+            syncState = "off"
 
-        syncState = "off"
+        if syncResponse == 'quit':
+            message = "syncOff"
+            watchMachine.sendMessage(message)
+            watch_process.terminate()
+            listen_process.terminate()
+            sys.exit()
 
     if currentState == "off":
-        syncResponse = raw_input("Synchronization is off, would you like to turn synchronization on (enter yes if so)?")
+        syncResponse = raw_input("Synchronization is off. \nTo turn sync on, enter yes.\nTo log out, enter quit.\n")
 
-        # send message to server socket
-        # server receives "on" message --> updates local machine sync status boolean syncOn to True
-        # files
+        if syncResponse == 'yes':
+            message = "syncOn"
+            watchMachine.sendMessage(message)
+            watch_process = Process(target=OneDog.startWatching)
+            watch_process.start()
+            syncState = "on"
 
-        syncState = "on"
+        if syncResponse == 'quit':
+            message = "syncOff"
+            watchMachine.sendMessage(message)
+            listen_process.terminate()
+            sys.exit()
+
 
     return syncState
 
@@ -162,11 +182,8 @@ if __name__ == "__main__":
 
     syncState = "on"
 
-
     #global watchMachine
     #global listenMachine
-
-
 
     usertype = raw_input("Enter 1 if you are a new user and 2 if you are a returning user: ")
 
@@ -182,20 +199,17 @@ if __name__ == "__main__":
 
         isAdminUser = dictFromInput["isAdminUser"]
         correctEntry = dictFromInput["correctUsernameAndPassword"]
-        filePath = dictFromInput["filePath"]
 
-        # right here we need access to the filepath/directory of THIS user
-        # need server IP address --> can be a command line argument (see above)
+        if correctEntry == "Invalid":
+            print "This username already exists."
+            sys.exit()
+
+        filePath = dictFromInput["filePath"]
 
         # change for whatever user / file path is acquired above
         watchMachine.oneDir = dictFromInput["filePath"]
         watchMachine.username = userName
 
-        # watch_thread = threading.Thread(target=OneDog.startWatching)
-        # watch_thread.daemon = True
-        # watch_thread.start
-
-        watch_process = Process(target=OneDog.startWatching)
         watch_process.start()
 
         # port = whichever port we determine will be the client listening port (1235?)
@@ -203,10 +217,8 @@ if __name__ == "__main__":
         reactor.listenTCP(listenMachine.listen_port, listenMachine)
 
         listen_process = Process(target=reactor.run)
+        listen_process.start()
 
-        # listen_thread = threading.Thread(target=reactor.run)
-        # listen_thread.daemon = True
-        # listen_thread.start
 
         while True:
             syncState = syncOptions(syncState)
@@ -238,21 +250,17 @@ if __name__ == "__main__":
             OneDog.lm.oneDir = filePath
             OneDog.lm.username = userName
 
-            watch_process = Process(target=OneDog.startWatching)
-            watch_process.start()
+            message = "syncOn"
+            watchMachine.sendMessage(message)
 
-            # watch_thread = threading.Thread(target=OneDog.startWatching)
-            # watch_thread.daemon = True
-            # watch_thread.start
+            watch_process.start()
 
             # port = whichever port we determine will be the client listening port (1235?)
             listenMachine.dir_path = filePath
             reactor.listenTCP(listenMachine.listen_port, listenMachine)
-            # listen_thread = threading.Thread(target=reactor.run)
-            # listen_thread.daemon = True
-            # listen_thread.start
 
             listen_process = Process(target=reactor.run)
+            listen_process.start()
 
             while True:
                 syncState = syncOptions(syncState)

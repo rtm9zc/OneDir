@@ -2,15 +2,12 @@
 from serverClasses import *
 import sys
 
-from multiprocessing import Process
+import threading
 
 from binascii import crc32
-from optparse import OptionParser
-import os, json, pprint, datetime
+import os, json, pprint
 
 from twisted.protocols import basic
-from twisted.internet import protocol
-from twisted.application import service, internet
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
@@ -41,9 +38,26 @@ class ServerReceiverProtocol(basic.LineReceiver):
         print ' ~ lineReceived:\n\t', line
 
         self.isFile = True
+        self.isSyncChange = False
 
         # get username via ip address
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
+
+        if line == 'syncOn':
+            self.factory.setSyncMachine(self.transport.getPeer().host, True)
+            self.isFile = False
+            self.isSyncChange = True
+            #print self.factory.usersToLM
+            self.transport.loseConnection()
+            return
+
+        if line == 'syncOff':
+            self.factory.setSyncMachine(self.transport.getPeer().host, False)
+            self.isFile = False
+            self.isSyncChange = True
+            #print self.factory.usersToLM
+            self.transport.loseConnection()
+            return
 
         # Create the upload directory if not already present
         uploaddir = os.path.join(self.factory.dir_path, clientUsername)
@@ -101,6 +115,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         if self.isFile == False:
             print 'connection lost'
+            if self.isSyncChange == True:
+                print 'sync status changed'
         if self.isFile == True:
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
@@ -120,7 +136,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             # Success uploading - tmpfile will be saved to disk.
             else:
 
-                #user_address = self.transport.getPeer().host
+                user_address = self.transport.getPeer().host
 
                 #self.factory.sendToMachines(user_address, self.outfilename)
 
@@ -204,7 +220,6 @@ class FileIOClient(basic.LineReceiver):
             self.controller.completed.callback(self.result)
         else:
             self.controller.completed.errback(reason)
-            #reactor.stop()
 
 class FileIOClientFactory(ClientFactory):
     """ file sender factory """
@@ -255,8 +270,8 @@ class FileIOServerFactory(ServerFactory):
         self.listen_port = listen_port
 
         self.adminUser = ["admin"]
-        self.usersToPW = {"admin": "pw", "alexa": "14"}
-        adminMachine = BabyLocalMachine("admin", "1", str(sys.argv[1]), "path")
+        self.usersToPW = {"admin": "pw"}
+        adminMachine = BabyLocalMachine("admin", "1", "randomIP", "path")
         self.usersToLM = {"admin": [adminMachine]}
 
 
@@ -274,12 +289,14 @@ class FileIOServerFactory(ServerFactory):
                 if machine.ipAddress == address:
                     return username
 
+    def setSyncMachine(self, address, syncOn):
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == address:
+                    machine.syncState = syncOn
+
     def testSendMachines(self, address):
-        print 'in testSendMachines'
-        username = self.retrieveUser(address)
-        print 'username retrieved is ', username
-        for machine in self.usersToLM[username]:
-            self.send_file('/Users/alowman/testServer/testfile.rtf','127.0.0.1')
+        transmitOne(os.path.join(self.dir_path, 'testfile.rtf'), address, self.send_port)
 
     def send_file(self, filePath, address):
         port = self.send_port

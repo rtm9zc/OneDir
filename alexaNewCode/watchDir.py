@@ -26,10 +26,7 @@ class OneDir_Observer():
 
 
 class OneDirHandler(FileSystemEventHandler):
-    #localstring = (str)
-    #localstring = os.getcwd()
-    #locallen = localstring.__len__()+1
-    #machine = (LocalMachine)
+
     def __init__(self, local):
         self.machine = local
 

@@ -1,4 +1,3 @@
-__author__ = 'Student'
 
 from multiprocessing import Process
 from twisted.internet import reactor
@@ -36,11 +35,17 @@ class LocalMachine():
     def getAddress(self):
         return self.address
 
+    def transmitMessage(self, message):
+        moveMessage.sendMessage(message,self.address,self.port)
+        reactor.run(installSignalHandlers=0)
+
+    def sendMessage(self, message):
+        p = Process(target=self.transmitMessage, args=(message,))
+        p.start()
+
     #These will be only called from the OneDirHandler
     #Will be handled by a listener method on the server
     def moved(self, fileSource, destination):
-        #print "_____MOVE______"
-
         p = Process(target=self.transmitFile, args=(destination,))
         p.start()
         if getExtension(fileSource) != '.tmp':
@@ -48,25 +53,14 @@ class LocalMachine():
             p2.start()
 
     def deleted(self, fileSource):
-        #print "_____DELETE______"
-        fileData = [self.username, self.address, "del", fileSource]
-        #self.sendArray(fileData)
-        #some shit to listen for a confirming response
         p = Process(target=self.transmitDelete, args=(fileSource,))
         p.start()
+
     def modified(self, fileSource):
-        #print "_____MOD______"
-        fileData = [self.username, self.address, "mod", fileSource]
-        #self.sendArray(fileData)
-        #some shit to listen for a confirming response
         p = Process(target=self.transmitFile, args=(fileSource,))
         p.start()
 
     def created(self, fileSource):
-        #print "_____CREATE______"
-        fileData = [self.username, self.address, "cre", fileSource]
-        #self.sendArray(fileData)
-        #some shit to listen for a confirming response.
         p = Process(target=self.transmitFile, args=(fileSource,))
         p.start()
 
