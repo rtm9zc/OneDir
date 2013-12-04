@@ -1,20 +1,19 @@
 
 from serverClasses import *
-
-from multiprocessing import Process
+import sys
+import fileCrypto
+import threading
 
 from binascii import crc32
-from optparse import OptionParser
-import os, json, pprint, datetime
-import fileCrypto
+import os, json, pprint
+
 from twisted.protocols import basic
-from twisted.internet import protocol
-from twisted.application import service, internet
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
+from logHandler import adminLog
 
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -24,6 +23,7 @@ class TransferCancelled(Exception):
     """ Exception for a user cancelling a transfer """
     pass
 
+
 class ServerReceiverProtocol(basic.LineReceiver):
     """ File Receiver """
 
@@ -32,21 +32,54 @@ class ServerReceiverProtocol(basic.LineReceiver):
         self.outfile = None
         self.remain = 0
         self.crc = 0
+        self.isFile = True
+        self.log = adminLog()
 
     def lineReceived(self, line):
         """ """
         print ' ~ lineReceived:\n\t', line
+
+        self.isFile = True
+        self.isSyncChange = False
+
+        # get username via ip address
+        clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
+
+        if line == 'syncOn':
+            self.log.add("Sync is now on")
+            self.factory.setSyncMachine(self.transport.getPeer().host, True)
+            self.isFile = False
+            self.isSyncChange = True
+            #print self.factory.usersToLM
+            self.transport.loseConnection()
+            return
+
+        if line == 'syncOff':
+            self.log.add("Sync is now off")
+            self.factory.setSyncMachine(self.transport.getPeer().host, False)
+            self.isFile = False
+            self.isSyncChange = True
+            #print self.factory.usersToLM
+            self.transport.loseConnection()
+            return
+
+        # Create the upload directory if not already present
+        uploaddir = os.path.join(self.factory.dir_path, clientUsername)
+
+        if line[0:6] == 'delete':
+            originalPath = line[6:]
+            pathToDelete = os.path.join(uploaddir, os.path.basename(originalPath))
+            os.remove(pathToDelete)
+            self.isFile = False
+            self.transport.loseConnection()
+            return
+
         self.instruction = json.loads(line)
         self.instruction.update(dict(client=self.transport.getPeer().host))
         self.size = self.instruction['file_size']
         self.original_fname = self.instruction.get('original_file_path',
                                                    'not given by client')
 
-        # get username via ip address
-        clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
-
-        # Create the upload directory if not already present
-        uploaddir = os.path.join(self.factory.dir_path, clientUsername)
 
         print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
@@ -78,40 +111,45 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
     def connectionMade(self):
         """ """
+        self.log("Connection made...")
         basic.LineReceiver.connectionMade(self)
         print '\n + a connection was made'
         print ' * ',self.transport.getPeer()
 
     def connectionLost(self, reason):
-        """ """
-        basic.LineReceiver.connectionLost(self, reason)
-        print ' - connectionLost'
-        if self.outfile:
-            self.outfile.close()
-            # Problem uploading - tmpfile will be discarded
-        if self.remain != 0:
-            print str(self.remain) + ')!=0'
-            remove_base = '--> removing tmpfile@'
-            if self.remain<0:
-                reason = ' .. file moved too much'
-            if self.remain>0:
-                reason = ' .. file moved too little'
-            print remove_base + self.outfilename + reason
-            os.remove(self.outfilename)
+        self.log.add("Client is losing connection!")
+        if self.isFile == False:
+            print 'connection lost'
+            if self.isSyncChange == True:
+                print 'sync status changed'
+        if self.isFile == True:
+            basic.LineReceiver.connectionLost(self, reason)
+            print ' - connectionLost'
+            if self.outfile:
+                self.outfile.close()
+                # Problem uploading - tmpfile will be discarded
+            if self.remain != 0:
+                print str(self.remain) + ')!=0'
+                remove_base = '--> removing tmpfile@'
+                if self.remain<0:
+                    reason = ' .. file moved too much'
+                if self.remain>0:
+                    reason = ' .. file moved too little'
+                print remove_base + self.outfilename + reason
+                os.remove(self.outfilename)
 
-        # Success uploading - tmpfile will be saved to disk.
-        else:
+            # Success uploading - tmpfile will be saved to disk.
+            else:
 
-            user_address = self.transport.getPeer().host
+                user_address = self.transport.getPeer().host
 
-            self.factory.sendToMachines(user_address, self.outfilename)
-            fileCrypto.decrypt_file('somekey', self.outfilename)
-            os.remove(self.outfilename)
+                #self.factory.sendToMachines(user_address, self.outfilename)
+                if ".enc" in self.outfilename:
+                    fileCrypto.decrypt_file('somekey', self.outfilename)
+                    os.remove(self.outfilename)
+                print '\n--> finished saving upload@' + self.outfilename
 
-            print '\n--> finished saving upload@' + self.outfilename
-
-
-            #self.factory.testSendMachines(user_address)
+                #self.factory.testSendMachines(user_address)
 
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -189,7 +227,6 @@ class FileIOClient(basic.LineReceiver):
             self.controller.completed.callback(self.result)
         else:
             self.controller.completed.errback(reason)
-            #reactor.stop()
 
 class FileIOClientFactory(ClientFactory):
     """ file sender factory """
@@ -216,7 +253,7 @@ class FileIOClientFactory(ClientFactory):
         return p
 
 
-def transmitOne(path, address='localhost', port=1235,):
+def transmitOne(path, address=str(sys.argv[1]), port=1235,):
     """ helper for file transmission """
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
@@ -229,7 +266,7 @@ class FileIOServerFactory(ServerFactory):
     """ file receiver factory """
     protocol = ServerReceiverProtocol
 
-    def __init__(self, filePath, address='localhost', send_port=1235, listen_port=1234):
+    def __init__(self, filePath, address=str(sys.argv[1]), send_port=1235, listen_port=1234):
         """ """
         # server filepath
         self.dir_path = filePath
@@ -240,17 +277,18 @@ class FileIOServerFactory(ServerFactory):
         self.listen_port = listen_port
 
         self.adminUser = ["admin"]
-        self.usersToPW = {"admin": "pw", "alexa": "14"}
-        adminMachine = BabyLocalMachine("admin", "1", "localhost", "path")
+        self.usersToPW = {"admin": "pw"}
+        adminMachine = BabyLocalMachine("admin", "1", "randomIP", "path")
         self.usersToLM = {"admin": [adminMachine]}
 
 
     def sendToMachines(self, address, filepath):
-        username = self.retrieveUser(address)
-        for machine in self.usersToLM[username]:
-            if machine.ipAddress != address:
-                print 'address is ', address
-                transmitOne(filepath,machine.ipAddress,self.send_port)
+        print 'yesssssss in sendToMachines'
+        # username = self.retrieveUser(address)
+        # for machine in self.usersToLM[username]:
+        #     if machine.ipAddress != address:
+        #         print 'address is ', address
+        #         transmitOne(filepath,machine.ipAddress,self.send_port)
 
     def retrieveUser(self, address):
         for username in self.usersToLM:
@@ -258,28 +296,37 @@ class FileIOServerFactory(ServerFactory):
                 if machine.ipAddress == address:
                     return username
 
+    def setSyncMachine(self, address, syncOn):
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == address:
+                    machine.syncState = syncOn
+
     def testSendMachines(self, address):
-        print 'in testSendMachines'
-        username = self.retrieveUser(address)
-        print 'username retrieved is ', username
-        for machine in self.usersToLM[username]:
-            self.send_file('/Users/alowman/testServer/testfile.rtf','127.0.0.1')
+        transmitOne(os.path.join(self.dir_path, 'testfile.rtf'), address, self.send_port)
 
     def send_file(self, filePath, address):
         port = self.send_port
+        if ".enc" not in filePath:
+                fileCrypto.encrypt_file('somekey', filePath)
+                filePath = filePath+ ".enc"
         controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
         f = FileIOClientFactory(filePath, controller)
         reactor.connectTCP(address, port, f)
         return controller.completed
 
+
 if __name__ == "__main__":
 
-    HOST, PORT = "localhost", 9999
+    HOST, PORT = str(sys.argv[1]), 9999
 
-    twisted_server = FileIOServerFactory('/Users/alowman/TestServer')
+    print HOST
+    print PORT
+
+    twisted_server = FileIOServerFactory(str(sys.argv[2]))
 
     # Create the server, binding to localhost on port 9999
-    socket_server = ThreadedTCPServer((HOST, PORT), MyTCPHandler)
+    socket_server = ThreadedTCPServer((HOST, PORT), MyTCPHandler, twisted_server)
     server_thread = threading.Thread(target=socket_server.serve_forever)
     server_thread.daemon = True
     server_thread.start()

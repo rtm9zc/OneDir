@@ -111,7 +111,6 @@ class FileIOClientFactory(ClientFactory):
         return p
 
 def sendFile(filePath, address, port):
-    address = '127.0.0.1'
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(filePath, controller)
     reactor.connectTCP(address, port, f)
