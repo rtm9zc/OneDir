@@ -15,6 +15,8 @@ from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 from logHandler import adminLog
 
+import time
+
 pp = pprint.PrettyPrinter(indent=1)
 
 from time import gmtime, strftime
@@ -40,12 +42,34 @@ class ServerReceiverProtocol(basic.LineReceiver):
         """ """
         print ' ~ lineReceived:\n\t', line
 
+        self.timeOut = False
+
+        currentTime = int(time.time())
+
+        machineTime = 0
+
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == self.transport.getPeer().host:
+                    machineTime = machine.lastUpdateTime
+
+        if machineTime == 0 or (currentTime - machineTime) < 3:
+            self.timeOut = True
+            self.transport.loseConnection()
+            return
+
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == self.transport.getPeer().host:
+                    machine.lastUpdateTime = currentTime
+
         self.isFile = True
         self.isSyncChange = False
         self.Failure = False
 
         # get username via ip address
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
+
 
         if line == 'syncOn':
             #self.factory.log.add(clientUsername + ": Sync is now on")
@@ -216,14 +240,17 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         #self.factory.log.add("Connection lost for user " + clientUsername)
 
-        if self.isFile == False:
+        if self.timeOut:
+            print "connection lost"
+
+        if self.isFile == False and self.timeOut == False:
             print 'connection lost'
             if self.isSyncChange or self.Failure:
                 print 'connection Lost'
             else:
                 user_address = self.transport.getPeer().host
                 self.factory.sendToMachines(user_address, self.outfilename)
-        if self.isFile == True:
+        if self.isFile == True and self.timeOut == False:
             #self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
