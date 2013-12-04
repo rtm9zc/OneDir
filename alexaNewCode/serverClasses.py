@@ -2,7 +2,7 @@ import os
 import SocketServer
 import shutil
 import logHandler
-import Queue
+# import Queue
 
 def getExtension(filename):
     return os.path.splitext(filename)[-1].lower()
@@ -16,7 +16,7 @@ class BabyLocalMachine():
         self.pathToDirectory = pathToDirectory
         self.port = port
         self.syncState = True
-        self.fileQueue = Queue()
+        #self.fileQueue = Queue()
 
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 

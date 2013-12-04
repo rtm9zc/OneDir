@@ -157,7 +157,8 @@ def syncOptions(currentState):
             watchMachine.sendMessage(message)
             watch_process.terminate()
             listen_process.terminate()
-            sys.exit()
+            #sys.exit(0)
+            os.system("pkill python")
 
     if currentState == "off":
         syncResponse = raw_input("Synchronization is off. \nTo turn sync on, enter yes.\nTo log out, enter quit.\n")
@@ -173,7 +174,8 @@ def syncOptions(currentState):
             message = "syncOff"
             watchMachine.sendMessage(message)
             listen_process.terminate()
-            sys.exit()
+            #sys.exit(0)
+            os.system("pkill python")
 
 
     return syncState
@@ -205,7 +207,8 @@ if __name__ == "__main__":
 
         if correctEntry == "Invalid":
             print "This username already exists."
-            sys.exit()
+            #sys.exit(0)
+            os.system("pkill python")
 
         filePath = dictFromInput["filePath"]
 

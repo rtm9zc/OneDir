@@ -42,7 +42,7 @@ class OneDirHandler(FileSystemEventHandler):
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             print("Destination: " + dest)
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and os.path.basename(source) != '.DS_Store':
+                if getExtension(source) != '.DS_Store' and os.path.basename(source)[0] != '.':
                     self.machine.moved(source, dest)
             if event.is_directory and source != self.machine.oneDir:
                 # if not os.listdir(dest):
@@ -64,7 +64,7 @@ class OneDirHandler(FileSystemEventHandler):
             print("File created! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source) != '.DS_Store':
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
                     self.machine.created(source)
             if event.is_directory and source != self.machine.oneDir:
                 message = 'isDirCreated' + source
@@ -78,7 +78,7 @@ class OneDirHandler(FileSystemEventHandler):
             print("File deleted! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source) != '.DS_Store':
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
                     self.machine.deleted(source)
             if event.is_directory:
                 message = 'isDirDeleted' + source
@@ -90,5 +90,5 @@ class OneDirHandler(FileSystemEventHandler):
             print("File modified! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source) != '.DS_Store':
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
                     self.machine.modified(source)

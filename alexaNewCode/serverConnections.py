@@ -17,6 +17,8 @@ from logHandler import adminLog
 
 pp = pprint.PrettyPrinter(indent=1)
 
+from time import gmtime, strftime
+
 
 
 class TransferCancelled(Exception):
@@ -81,6 +83,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
             self.isFile = False
             self.factory.log.add("File modifications for user " + clientUsername)
             self.outfilename = 'delete' + pathToDelete
+
+
+
             self.transport.loseConnection()
             return
 
@@ -139,6 +144,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 self.transport.loseConnection()
                 return
 
+        # otherwise upload file as usual
+
         self.instruction = json.loads(line)
         self.instruction.update(dict(client=self.transport.getPeer().host))
         self.size = self.instruction['file_size']
@@ -156,6 +163,10 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         # Need to change to be able to handle files within subdirectories!!!
         self.outfilename = os.path.join(uploaddir, endFileName)
+
+        src = self.outfilename
+        destDir = os.path.join(self.factory.dir_path, "previousFileVersions")
+        destFile = os.path.join(destDir, clientUsername + strftime("%Y-%m-%d %H.%M.%S", self.gmtime()) + os.path.basename(self.original_fname))
 
         fullUploadDir, tail = os.path.split(self.outfilename)
         if not os.path.isdir(fullUploadDir):
@@ -373,8 +384,8 @@ class FileIOServerFactory(ServerFactory):
                 #print 'address is ', address
                 if machine.syncState:
                     transmitOne(filepath,machine.ipAddress,self.send_port)
-                else:
-                    machine.fileQueue.put(filepath)
+                # else:
+                #     machine.fileQueue.put(filepath)
 
     def retrieveUser(self, address):
         for username in self.usersToLM:
@@ -407,7 +418,8 @@ class FileIOServerFactory(ServerFactory):
 
 if __name__ == "__main__":
 
-    HOST, PORT = str(sys.argv[1]), 9999
+    #HOST, PORT = str(sys.argv[1]), 9999
+    HOST, PORT = '', 9999
 
     print HOST
     print PORT
