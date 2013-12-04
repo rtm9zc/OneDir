@@ -13,6 +13,7 @@ from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import FileSender
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
+from logHandler import adminLog
 
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -44,6 +45,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
 
         if line == 'syncOn':
+            self.factory.log.add(clientUsername + ": Sync is now on")
             self.factory.setSyncMachine(self.transport.getPeer().host, True)
             self.isFile = False
             self.isSyncChange = True
@@ -52,6 +54,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             return
 
         if line == 'syncOff':
+            self.factory.log.add(clientUsername + ": Sync is now off")
             self.factory.setSyncMachine(self.transport.getPeer().host, False)
             self.isFile = False
             self.isSyncChange = True
@@ -67,6 +70,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             pathToDelete = os.path.join(uploaddir, os.path.basename(originalPath))
             os.remove(pathToDelete)
             self.isFile = False
+            self.factory.log.add("File modifications for user " + clientUsername)
             self.transport.loseConnection()
             return
 
@@ -107,17 +111,23 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
     def connectionMade(self):
         """ """
+        #self.log("Connection made...")
         basic.LineReceiver.connectionMade(self)
         print '\n + a connection was made'
         print ' * ',self.transport.getPeer()
 
     def connectionLost(self, reason):
 
+        clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
+
+        self.factory.log.add("Connection lost for user " + clientUsername)
+
         if self.isFile == False:
             print 'connection lost'
             if self.isSyncChange == True:
                 print 'sync status changed'
         if self.isFile == True:
+            self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
             if self.outfile:
@@ -273,6 +283,8 @@ class FileIOServerFactory(ServerFactory):
         self.usersToPW = {"admin": "pw"}
         adminMachine = BabyLocalMachine("admin", "1", "randomIP", "path")
         self.usersToLM = {"admin": [adminMachine]}
+
+        self.log = adminLog()
 
 
     def sendToMachines(self, address, filepath):
