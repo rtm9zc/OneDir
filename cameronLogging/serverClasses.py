@@ -118,7 +118,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         if correctUserandPW == "True" and isAdminUser == "False":
             #logs that user logged in correctly
             log = logHandler.adminLog();
-            log.add("User is successfully logging in...")
+            log.add("User"+ self.username +"is successfully logging in...")
 
             self.macAddress = self.request.recv(1024).strip()
             self.macAddress = str(self.macAddress)
