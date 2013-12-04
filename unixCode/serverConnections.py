@@ -48,7 +48,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
 
         if line == 'syncOn':
-            self.factory.log.add(clientUsername + ": Sync is now on")
+            #self.factory.log.add(clientUsername + ": Sync is now on")
             self.factory.setSyncMachine(self.transport.getPeer().host, True)
             self.isFile = False
             self.isSyncChange = True
@@ -58,7 +58,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             return
 
         if line == 'syncOff':
-            self.factory.log.add(clientUsername + ": Sync is now off")
+            #self.factory.log.add(clientUsername + ": Sync is now off")
             self.factory.setSyncMachine(self.transport.getPeer().host, False)
             self.isFile = False
             self.isSyncChange = True
@@ -75,13 +75,19 @@ class ServerReceiverProtocol(basic.LineReceiver):
             endPath = os.path.relpath(originalPath, machinePath)
             pathToDelete = os.path.join(uploaddir, endPath)
             if os.path.exists(pathToDelete):
+
+                src = pathToDelete
+                destDir = os.path.join(self.factory.dir_path, "previousFileVersions")
+                destFile = os.path.join(destDir, clientUsername + strftime("%Y-%m-%d %H.%M.%S", gmtime()) + os.path.basename(self.original_fname))
+                shutil.copyfile(src, destFile)
+
                 os.remove(pathToDelete)
             else:
                 self.Failure = True
                 self.transport.loseConnection()
                 return
             self.isFile = False
-            self.factory.log.add("File modifications for user " + clientUsername)
+            #self.factory.log.add("File modifications for user " + clientUsername)
             self.outfilename = 'delete' + pathToDelete
 
 
@@ -166,7 +172,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         src = self.outfilename
         destDir = os.path.join(self.factory.dir_path, "previousFileVersions")
-        destFile = os.path.join(destDir, clientUsername + strftime("%Y-%m-%d %H.%M.%S", self.gmtime()) + os.path.basename(self.original_fname))
+        destFile = os.path.join(destDir, clientUsername + strftime("%Y-%m-%d %H.%M.%S", gmtime()) + os.path.basename(self.original_fname))
+        if os.path.exists(src):
+            shutil.copyfile(src, destFile)
 
         fullUploadDir, tail = os.path.split(self.outfilename)
         if not os.path.isdir(fullUploadDir):
@@ -204,7 +212,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
 
-        self.factory.log.add("Connection lost for user " + clientUsername)
+        #self.factory.log.add("Connection lost for user " + clientUsername)
 
         if self.Failure:
             print 'connection lost'
@@ -217,7 +225,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 user_address = self.transport.getPeer().host
                 #self.factory.sendToMachines(user_address, self.outfilename)
         if self.isFile == True and not self.Failure:
-            self.factory.log.add("File modifications for user " + clientUsername)
+            #self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
             if self.outfile:
@@ -234,15 +242,15 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 os.remove(self.outfilename)
 
             # Success uploading - tmpfile will be saved to disk.
-            else:
+        else:
 
-                user_address = self.transport.getPeer().host
+            user_address = self.transport.getPeer().host
 
-                #self.factory.sendToMachines(user_address, self.outfilename)
+            self.factory.sendToMachines(user_address, self.outfilename)
 
-                print '\n--> finished saving upload@' + self.outfilename
+            print '\n--> finished saving upload@' + self.outfilename
 
-                #self.factory.testSendMachines(user_address)
+            #self.factory.testSendMachines(user_address)
 
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
@@ -374,7 +382,7 @@ class FileIOServerFactory(ServerFactory):
         adminMachine = BabyLocalMachine("admin", "1", "randomIP", "path")
         self.usersToLM = {"admin": [adminMachine]}
 
-        self.log = adminLog()
+        #self.log = adminLog()
 
 
     def sendToMachines(self, address, filepath):
