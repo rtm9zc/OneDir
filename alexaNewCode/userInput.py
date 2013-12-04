@@ -20,7 +20,7 @@ userName = 'user'
 
 watchMachine = LocalMachine('TestUser', 'TestDirectory', HOST)
 OneDog = OneDir_Observer(watchMachine)
-listenMachine = ListenerMachine('TestDirectory', listen_port=1235)
+listenMachine = ListenerMachine('TestDirectory', 'TestUser', str(sys.argv[2]), listen_port=1235)
 
 watch_process = Process(target=OneDog.startWatching)
 
@@ -217,6 +217,7 @@ if __name__ == "__main__":
 
         # port = whichever port we determine will be the client listening port (1235?)
         listenMachine.dir_path = filePath
+        listenMachine.username = userName
         reactor.listenTCP(listenMachine.listen_port, listenMachine)
 
         listen_process = Process(target=reactor.run)
@@ -260,6 +261,7 @@ if __name__ == "__main__":
 
             # port = whichever port we determine will be the client listening port (1235?)
             listenMachine.dir_path = filePath
+            listenMachine.username = userName
             reactor.listenTCP(listenMachine.listen_port, listenMachine)
 
             listen_process = Process(target=reactor.run)

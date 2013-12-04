@@ -46,11 +46,21 @@ class LocalMachine():
     #These will be only called from the OneDirHandler
     #Will be handled by a listener method on the server
     def moved(self, fileSource, destination):
-        p = Process(target=self.transmitFile, args=(destination,))
-        p.start()
+        # p = Process(target=self.transmitFile, args=(destination,))
+        # p.start()
+        # if getExtension(fileSource) != '.tmp':
+        #     p2 = Process(target=self.transmitDelete, args=(fileSource,))
+        #     p2.start()
+
         if getExtension(fileSource) != '.tmp':
-            p2 = Process(target=self.transmitDelete, args=(fileSource,))
+            message = 'moved' + fileSource + "##" + destination
+            p = Process(target=self.transmitMessage, args=(message,))
+            p.start()
+
+        else:
+            p2 = Process(target=self.transmitFile, args=(destination,))
             p2.start()
+
 
     def deleted(self, fileSource):
         p = Process(target=self.transmitDelete, args=(fileSource,))

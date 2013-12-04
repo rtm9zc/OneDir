@@ -2,6 +2,7 @@ import os
 import SocketServer
 import shutil
 import logHandler
+import Queue
 
 def getExtension(filename):
     return os.path.splitext(filename)[-1].lower()
@@ -15,6 +16,7 @@ class BabyLocalMachine():
         self.pathToDirectory = pathToDirectory
         self.port = port
         self.syncState = True
+        self.fileQueue = Queue()
 
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 
@@ -117,8 +119,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
         if correctUserandPW == "True" and isAdminUser == "False":
             #logs that user logged in correctly
-            log = logHandler.adminLog();
-            log.add("User is successfully logging in...")
+            #log = logHandler.adminLog();
+            self.server.twisted_server.log.add("User is successfully logging in...")
 
             self.macAddress = self.request.recv(1024).strip()
             self.macAddress = str(self.macAddress)

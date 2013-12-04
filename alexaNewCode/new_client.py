@@ -4,7 +4,7 @@ from binascii import crc32
 import os
 import json
 import pprint
-import Queue
+import shutil
 
 from twisted.protocols import basic
 from twisted.internet.protocol import ServerFactory
@@ -42,6 +42,63 @@ class ClientReceiverProtocol(basic.LineReceiver):
     def lineReceived(self, line):
         """ """
         print ' ~ lineReceived:\n\t', line
+
+        self.isFile = True
+
+        uploaddir = self.factory.dir_path
+
+        if line[0:6] == 'delete':
+            originalPath = line[6:]
+            machinePath = os.path.join(self.factory.server_path, self.factory.username)
+            endPath = os.path.relpath(originalPath, machinePath)
+            pathToDelete = os.path.join(uploaddir, endPath)
+            if os.path.exists(pathToDelete):
+                os.remove(pathToDelete)
+            self.isFile = False
+            self.transport.loseConnection()
+            return
+
+        if line[0:5] == 'moved':
+            sourceDestString = line[5:]
+            sourceAndDest = sourceDestString.split("##")
+            source = sourceAndDest[0]
+            destination = sourceAndDest[1]
+            machinePath = os.path.join(self.factory.server_path, self.factory.username)
+            endSource = os.path.relpath(source, machinePath)
+            endDest = os.path.relpath(destination, machinePath)
+            sourcePath = os.path.join(uploaddir, endSource)
+            destinationPath = os.path.join(uploaddir, endDest)
+            if os.path.exists(sourcePath):
+                shutil.move(sourcePath, destinationPath)
+            self.isFile = False
+            self.transport.loseConnection()
+            return
+
+        if line[0:5] == 'isDir':
+
+            if line[5:12] == 'Created':
+                originalPath = line[12:]
+                machinePath = os.path.join(self.factory.server_path, self.factory.username)
+                endDir = os.path.relpath(originalPath, machinePath)
+                newDir = os.path.join(uploaddir, endDir)
+                if not os.path.exists(newDir):
+                    os.makedirs(newDir)
+                self.isFile = False
+                self.transport.loseConnection()
+                return
+
+            if line[5:12] == 'Deleted':
+                originalPath = line[12:]
+                machinePath = os.path.join(self.factory.server_path, self.factory.username)
+                endDir = os.path.relpath(originalPath, machinePath)
+                dirToRemove = os.path.join(uploaddir, endDir)
+                if os.path.exists(dirToRemove):
+                    shutil.rmtree(dirToRemove)
+                self.isFile = False
+                self.transport.loseConnection()
+                return
+
+
         self.instruction = json.loads(line)
         self.instruction.update(dict(client=self.transport.getPeer().host))
         self.size = self.instruction['file_size']
@@ -49,7 +106,7 @@ class ClientReceiverProtocol(basic.LineReceiver):
                                                    'not given by client')
 
         # Create the upload directory if not already present
-        uploaddir = self.factory.dir_path
+
         print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
@@ -85,22 +142,25 @@ class ClientReceiverProtocol(basic.LineReceiver):
         #print ' * ',self.transport.getPeer()
 
     def connectionLost(self, reason):
-        """ """
-        basic.LineReceiver.connectionLost(self, reason)
-        if self.outfile:
-            self.outfile.close()
-            # Problem uploading - tmpfile will be discarded
-        if self.remain != 0:
-            remove_base = '--> removing tmpfile@'
-            if self.remain<0:
-                reason = ' .. file moved too much'
-            if self.remain>0:
-                reason = ' .. file moved too little'
-            os.remove(self.outfilename)
+
+        if self.isFile:
+            basic.LineReceiver.connectionLost(self, reason)
+            if self.outfile:
+                self.outfile.close()
+                # Problem uploading - tmpfile will be discarded
+            if self.remain != 0:
+                remove_base = '--> removing tmpfile@'
+                if self.remain<0:
+                    reason = ' .. file moved too much'
+                if self.remain>0:
+                    reason = ' .. file moved too little'
+                print remove_base + self.outfilename + reason
+                os.remove(self.outfilename)
 
         # Else: Success uploading - tmpfile will be saved to disk.
         else:
-            print "uploaded to"
+            #print '\n--> finished saving upload@' + self.outfilename
+            print 'finished saving upload'
 
 
 def fileinfo(fname):
@@ -205,9 +265,13 @@ class ListenerMachine(ServerFactory):
 
     protocol = ClientReceiverProtocol
 
-    def __init__(self, filePath, listen_port=1235):
+    def __init__(self, filePath, userName, serverPath, listen_port=1235):
         # file path for local machine
         self.dir_path = filePath
+        # username for machine
+        self.username = userName
+        #file path for server machine
+        self.server_path = serverPath
         # port to listen on
         self.listen_port = listen_port
 

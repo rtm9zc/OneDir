@@ -40,6 +40,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         self.isFile = True
         self.isSyncChange = False
+        self.Failure = False
 
         # get username via ip address
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
@@ -49,6 +50,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             self.factory.setSyncMachine(self.transport.getPeer().host, True)
             self.isFile = False
             self.isSyncChange = True
+
             #print self.factory.usersToLM
             self.transport.loseConnection()
             return
@@ -67,12 +69,75 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         if line[0:6] == 'delete':
             originalPath = line[6:]
-            pathToDelete = os.path.join(uploaddir, os.path.basename(originalPath))
-            os.remove(pathToDelete)
+            machinePath = self.factory.retrieveFilePath(self.transport.getPeer().host)
+            endPath = os.path.relpath(originalPath, machinePath)
+            pathToDelete = os.path.join(uploaddir, endPath)
+            if os.path.exists(pathToDelete):
+                os.remove(pathToDelete)
+            else:
+                self.Failure = True
+                self.transport.loseConnection()
+                return
             self.isFile = False
             self.factory.log.add("File modifications for user " + clientUsername)
+            self.outfilename = 'delete' + pathToDelete
             self.transport.loseConnection()
             return
+
+        if line[0:5] == 'moved':
+            sourceDestString = line[5:]
+            sourceAndDest = sourceDestString.split("##")
+            source = sourceAndDest[0]
+            destination = sourceAndDest[1]
+            machinePath = self.factory.retrieveFilePath(self.transport.getPeer().host)
+            endSource = os.path.relpath(source, machinePath)
+            endDest = os.path.relpath(destination, machinePath)
+            sourcePath = os.path.join(uploaddir, endSource)
+            destinationPath = os.path.join(uploaddir, endDest)
+            if os.path.exists(sourcePath):
+                shutil.move(sourcePath, destinationPath)
+            else:
+                self.Failure = True
+                self.transport.loseConnection()
+                return
+            self.isFile = False
+            self.outfilename = 'moved' + sourcePath + '##' + destinationPath
+            self.transport.loseConnection()
+            return
+
+
+        if line[0:5] == 'isDir':
+
+            if line[5:12] == 'Created':
+                originalPath = line[12:]
+                machinePath = self.factory.retrieveFilePath(self.transport.getPeer().host)
+                endDir = os.path.relpath(originalPath, machinePath)
+                newDir = os.path.join(uploaddir, endDir)
+                if not os.path.exists(newDir):
+                    os.makedirs(newDir)
+                else:
+                    self.Failure = True
+                    self.transport.loseConnection()
+                    return
+                self.isFile = False
+                self.outfilename = 'isDirCreated' + newDir
+                self.transport.loseConnection()
+                return
+
+            if line[5:12] == 'Deleted':
+                originalPath = line[12:]
+                machinePath = self.factory.retrieveFilePath(self.transport.getPeer().host)
+                endDir = os.path.relpath(originalPath, machinePath)
+                dirToRemove = os.path.join(uploaddir, endDir)
+                if os.path.exists(dirToRemove):
+                    shutil.rmtree(dirToRemove)
+                else:
+                    self.Failure = True
+                    self.transport.loseConnection()
+                self.isFile = False
+                self.outfilename = 'isDirDeleted' + dirToRemove
+                self.transport.loseConnection()
+                return
 
         self.instruction = json.loads(line)
         self.instruction.update(dict(client=self.transport.getPeer().host))
@@ -85,8 +150,16 @@ class ServerReceiverProtocol(basic.LineReceiver):
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
 
+
+        machinePath = self.factory.retrieveFilePath(self.transport.getPeer().host)
+        endFileName = os.path.relpath(self.original_fname, machinePath)
+
         # Need to change to be able to handle files within subdirectories!!!
-        self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
+        self.outfilename = os.path.join(uploaddir, endFileName)
+
+        fullUploadDir, tail = os.path.split(self.outfilename)
+        if not os.path.isdir(fullUploadDir):
+            os.makedirs(fullUploadDir)
 
         print ' * Receiving into file@',self.outfilename
         try:
@@ -122,11 +195,17 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         self.factory.log.add("Connection lost for user " + clientUsername)
 
-        if self.isFile == False:
+        if self.Failure:
+            print 'connection lost'
+
+        if self.isFile == False and not self.Failure:
             print 'connection lost'
             if self.isSyncChange == True:
                 print 'sync status changed'
-        if self.isFile == True:
+            else:
+                user_address = self.transport.getPeer().host
+                #self.factory.sendToMachines(user_address, self.outfilename)
+        if self.isFile == True and not self.Failure:
             self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
@@ -256,7 +335,7 @@ class FileIOClientFactory(ClientFactory):
         return p
 
 
-def transmitOne(path, address=str(sys.argv[1]), port=1235,):
+def transmitOne(path, address, port=1235,):
     """ helper for file transmission """
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
@@ -288,12 +367,14 @@ class FileIOServerFactory(ServerFactory):
 
 
     def sendToMachines(self, address, filepath):
-        print 'yesssssss in sendToMachines'
-        # username = self.retrieveUser(address)
-        # for machine in self.usersToLM[username]:
-        #     if machine.ipAddress != address:
-        #         print 'address is ', address
-        #         transmitOne(filepath,machine.ipAddress,self.send_port)
+        username = self.retrieveUser(address)
+        for machine in self.usersToLM[username]:
+            if machine.ipAddress != address:
+                #print 'address is ', address
+                if machine.syncState:
+                    transmitOne(filepath,machine.ipAddress,self.send_port)
+                else:
+                    machine.fileQueue.put(filepath)
 
     def retrieveUser(self, address):
         for username in self.usersToLM:
@@ -306,6 +387,12 @@ class FileIOServerFactory(ServerFactory):
             for machine in self.usersToLM[username]:
                 if machine.ipAddress == address:
                     machine.syncState = syncOn
+
+    def retrieveFilePath(self, address):
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == address:
+                    return machine.pathToDirectory
 
     def testSendMachines(self, address):
         transmitOne(os.path.join(self.dir_path, 'testfile.rtf'), address, self.send_port)

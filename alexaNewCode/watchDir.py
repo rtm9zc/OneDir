@@ -42,8 +42,19 @@ class OneDirHandler(FileSystemEventHandler):
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             print("Destination: " + dest)
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store':
+                if getExtension(source) != '.DS_Store' and os.path.basename(source) != '.DS_Store':
                     self.machine.moved(source, dest)
+            if event.is_directory and source != self.machine.oneDir:
+                # if not os.listdir(dest):
+                #     createMessage = 'isDirCreated' + dest
+                #     self.machine.sendMessage(createMessage)
+                #     deleteMessage = 'isDirDeleted' + source
+                #     self.machine.sendMessage(deleteMessage)
+                # else:
+                #     deleteMessage = 'isDirDeleted' + source
+                #     self.machine.sendMessage(deleteMessage)
+                self.machine.moved(source, dest)
+
 
     def on_created(self, event):
         #Called on making new file
@@ -53,8 +64,11 @@ class OneDirHandler(FileSystemEventHandler):
             print("File created! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp':
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source) != '.DS_Store':
                     self.machine.created(source)
+            if event.is_directory and source != self.machine.oneDir:
+                message = 'isDirCreated' + source
+                self.machine.sendMessage(message)
 
     def on_deleted(self, event):
         #Called on deletion of file/directory
@@ -64,13 +78,17 @@ class OneDirHandler(FileSystemEventHandler):
             print("File deleted! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp':
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source) != '.DS_Store':
                     self.machine.deleted(source)
+            if event.is_directory:
+                message = 'isDirDeleted' + source
+                self.machine.sendMessage(message)
+
     def on_modified(self, event):
         source = event.src_path
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File modified! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
-                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp':
+                if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source) != '.DS_Store':
                     self.machine.modified(source)
