@@ -2,6 +2,7 @@ import os
 import sys
 import socket
 from uuid import getnode as get_mac
+import time
 
 from multiprocessing import Process
 from new_client import *
@@ -79,6 +80,7 @@ def sendData(userType, username, password):
 def adminInput():
     adminChoiceNum = "1"
     while adminChoiceNum != "0":
+
         adminChoiceNum = raw_input("Enter 1 if you would like to view all usernames and passwords, \n"
                              "Enter 2 if you would like to see info about the number and size of files for all users \n"
                              "Enter 3 if you would like to see info about the number and size of files for a given user \n"
@@ -96,7 +98,8 @@ def adminInput():
 
             sock.sendall(adminChoiceNum + "\n")
             print "sent"
-            adminResults = sock.recv(1024)
+            adminResults = sock.recv(65536)
+            #adminResults = sock.recv()
             print "received"
             adminResults = str(adminResults).strip()
 
@@ -104,26 +107,26 @@ def adminInput():
                 userToPrint = raw_input("Enter the username you would like info about: ")
                 userToPrint = str(userToPrint).strip()
                 sock.sendall(userToPrint + "\n")
-                adminResults = sock.recv(1024)
+                adminResults = sock.recv(65536)
                 adminResults = str(adminResults).strip()
 
             if adminChoiceNum == "4" or adminChoiceNum == "5":
                 accountToDelete = raw_input("Enter the username for the account you wish to delete: ")
                 accountToDelete = str(accountToDelete).strip()
                 sock.sendall(accountToDelete + "\n")
-                adminResults = sock.recv(1024)
+                adminResults = sock.recv(65536)
                 adminResults = str(adminResults).strip()
 
             if adminChoiceNum == "6":
                 usernameForPWChange = raw_input("Enter the username for the account for which you wish to change the password: ")
                 usernameForPWChange = str(usernameForPWChange).strip()
                 sock.sendall(usernameForPWChange + "\n")
-                adminResults = sock.recv(1024)
+                adminResults = sock.recv(65536)
 
                 passwordForPWChange = raw_input("Enter the new password for the account you wish to change: ")
                 passwordForPWChange = str(passwordForPWChange).strip()
                 sock.sendall(passwordForPWChange + "\n")
-                adminResults = sock.recv(1024)
+                adminResults = sock.recv(65536)
 
                 adminResults = str(adminResults).strip()
 
