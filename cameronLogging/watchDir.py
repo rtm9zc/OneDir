@@ -40,10 +40,13 @@ class OneDirHandler(FileSystemEventHandler):
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File moved! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-            print("Destination: " + dest)
-            if not event.is_directory:
-                if getExtension(source) != '.DS_Store':
-                    self.machine.moved(source, dest)
+            if(dest == None):
+                self.machine.deleted(source)
+            else:
+                print("Destination: " + dest)
+                if not event.is_directory:
+                    if getExtension(source) != '.DS_Store':
+                        self.machine.moved(source, dest)
 
     def on_created(self, event):
         #Called on making new file
