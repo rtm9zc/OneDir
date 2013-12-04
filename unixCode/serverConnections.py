@@ -53,7 +53,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             self.isFile = False
             self.isSyncChange = True
 
-            self.clearSyncQueue(self.transport.getPeer().host)
+            self.factory.clearSyncQueue(self.transport.getPeer().host)
 
             #print self.factory.usersToLM
             self.transport.loseConnection()
@@ -216,17 +216,14 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         #self.factory.log.add("Connection lost for user " + clientUsername)
 
-        if self.Failure:
+        if self.isFile == False:
             print 'connection lost'
-
-        if self.isFile == False and not self.Failure:
-            print 'connection lost'
-            if self.isSyncChange == True:
-                print 'sync status changed'
+            if self.isSyncChange or self.Failure:
+                print 'connection Lost'
             else:
                 user_address = self.transport.getPeer().host
-                #self.factory.sendToMachines(user_address, self.outfilename)
-        if self.isFile == True and not self.Failure:
+                self.factory.sendToMachines(user_address, self.outfilename)
+        if self.isFile == True:
             #self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
@@ -244,15 +241,17 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 os.remove(self.outfilename)
 
             # Success uploading - tmpfile will be saved to disk.
-        else:
+            else:
 
-            user_address = self.transport.getPeer().host
+                user_address = self.transport.getPeer().host
 
-            self.factory.sendToMachines(user_address, self.outfilename)
+                print 'user_address is ' + user_address
 
-            print '\n--> finished saving upload@' + self.outfilename
+                self.factory.sendToMachines(user_address, self.outfilename)
 
-            #self.factory.testSendMachines(user_address)
+                print '\n--> finished saving upload@' + self.outfilename
+
+                #self.factory.testSendMachines(user_address)
 
 def fileinfo(fname):
     """ when "file" tool is available, return it's output on "fname" """
