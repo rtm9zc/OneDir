@@ -373,8 +373,8 @@ class FileIOServerFactory(ServerFactory):
                 #print 'address is ', address
                 if machine.syncState:
                     transmitOne(filepath,machine.ipAddress,self.send_port)
-                else:
-                    machine.fileQueue.put(filepath)
+                # else:
+                #     machine.fileQueue.put(filepath)
 
     def retrieveUser(self, address):
         for username in self.usersToLM:
