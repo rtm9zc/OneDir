@@ -38,7 +38,10 @@ class OneDirHandler(FileSystemEventHandler):
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
             print("File moved! (" + source + " at time: " +
             time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-            print("Destination: " + dest)
+            if(dest == None):
+                self.machine.deleted(source)
+            else:
+                print("Destination: " + dest)
             if not event.is_directory:
                 self.machine.moved(source, dest)
 
