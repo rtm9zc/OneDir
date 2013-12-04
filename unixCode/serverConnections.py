@@ -53,6 +53,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
             self.isFile = False
             self.isSyncChange = True
 
+            self.clearSyncQueue(self.transport.getPeer().host)
+
             #print self.factory.usersToLM
             self.transport.loseConnection()
             return
@@ -392,8 +394,8 @@ class FileIOServerFactory(ServerFactory):
                 #print 'address is ', address
                 if machine.syncState:
                     transmitOne(filepath,machine.ipAddress,self.send_port)
-                # else:
-                #     machine.fileQueue.put(filepath)
+                else:
+                    machine.syncQueue.put(filepath)
 
     def retrieveUser(self, address):
         for username in self.usersToLM:
@@ -407,14 +409,19 @@ class FileIOServerFactory(ServerFactory):
                 if machine.ipAddress == address:
                     machine.syncState = syncOn
 
+    def clearSyncQueue(self, address):
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == address:
+                    while not machine.syncQueue.empty():
+                        message = machine.syncQueue.get()
+                        transmitOne(message, address, self.send_port)
+
     def retrieveFilePath(self, address):
         for username in self.usersToLM:
             for machine in self.usersToLM[username]:
                 if machine.ipAddress == address:
                     return machine.pathToDirectory
-
-    def testSendMachines(self, address):
-        transmitOne(os.path.join(self.dir_path, 'testfile.rtf'), address, self.send_port)
 
     def send_file(self, filePath, address):
         port = self.send_port

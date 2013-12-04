@@ -3,6 +3,8 @@ import SocketServer
 import shutil
 #import logHandler
 
+import Queue
+
 def getExtension(filename):
     return os.path.splitext(filename)[-1].lower()
 
@@ -15,7 +17,7 @@ class BabyLocalMachine():
         self.pathToDirectory = pathToDirectory
         self.port = port
         self.syncState = True
-        #self.fileQueue = Queue()
+        self.syncQueue = Queue.Queue(100)
 
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 
@@ -139,8 +141,14 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
                 lm = BabyLocalMachine(self.username, self.macAddress, self.client_address[0], filePath)
                 self.server.twisted_server.usersToLM[self.username].append(lm)
-                os.makedirs(os.path.join(self.server.twisted_server.dir_path, self.username))
-
+                newUserPath = os.path.join(self.server.twisted_server.dir_path, self.username)
+                if not os.path.exists(newUserPath):
+                    os.makedirs(os.path.join(self.server.twisted_server.dir_path, self.username))
+                else:
+                    for root, dirs, files in os.walk(newUserPath):
+                        for filename in files:
+                            fullFile = os.path.join(root, filename)
+                            lm.syncQueue.put(fullFile)
 
         if isAdminUser == "True" and correctUserandPW == "True":
             #log = logHandler.adminLog();
