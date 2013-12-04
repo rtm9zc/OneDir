@@ -407,7 +407,8 @@ class FileIOServerFactory(ServerFactory):
 
 if __name__ == "__main__":
 
-    HOST, PORT = str(sys.argv[1]), 9999
+    #HOST, PORT = str(sys.argv[1]), 9999
+    HOST, PORT = '', 9999
 
     print HOST
     print PORT
