@@ -265,9 +265,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 # print 'user_address is ' + user_address
                 if ".enc" in self.outfilename:
                     fileCrypto.decrypt_file('somekey', self.outfilename)
-                    os.remove(self.outfilename)
-                self.factory.sendToMachines(user_address, self.outfilename)
 
+                self.factory.sendToMachines(user_address, self.outfilename)
+                os.remove(self.outfilename)
                 # print '\n--> finished saving upload@' + self.outfilename
 
                 #self.factory.testSendMachines(user_address)
