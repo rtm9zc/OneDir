@@ -286,6 +286,7 @@ class FileIOClient(basic.LineReceiver):
         # print "in FileIOClient"
 
         self.path = path
+
         self.controller = controller
 
         self.infile = open(self.path, 'rb')
@@ -357,7 +358,9 @@ class FileIOClientFactory(ClientFactory):
         """ """
         # print 'in FileIOClientFactory class'
         self.path = path
-
+        if ".enc" not in self.path and not os.path.isdir(self.path):
+            fileCrypto.encrypt_file('somekey', self.path)
+            self.path = self.path + ".enc"
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
