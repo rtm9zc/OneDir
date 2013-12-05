@@ -1,5 +1,4 @@
 import os, json
-import fileCrypto
 
 from twisted.protocols import basic
 from twisted.internet.protocol import ClientFactory
@@ -91,9 +90,6 @@ class FileIOClientFactory(ClientFactory):
         """ """
         # print 'in FileIOClientFactory class'
         self.path = path
-        if ".enc" not in path:
-            fileCrypto.encrypt_file('somekey', self.path)
-            self.path = self.path + ".enc"
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
@@ -112,9 +108,6 @@ class FileIOClientFactory(ClientFactory):
 
 def sendFile(filePath, address, port):
 
-    if ".enc" not in filePath:
-        fileCrypto.encrypt_file('somekey', filePath)
-        filePath = filePath + ".enc"
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(filePath, controller)
     reactor.connectTCP(address, port, f)

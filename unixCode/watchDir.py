@@ -1,6 +1,5 @@
 import time
 import os
-import fileCrypto
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -69,8 +68,7 @@ class OneDirHandler(FileSystemEventHandler):
             # time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
                 if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
-                    fileCrypto.encrypt_file('somekey', source)
-                    source = source + ".enc"
+
                     self.machine.created(source)
             if event.is_directory and source != self.machine.oneDir:
                 message = 'isDirCreated' + source
@@ -101,6 +99,4 @@ class OneDirHandler(FileSystemEventHandler):
             #time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
                 if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
-                    fileCrypto.encrypt_file('somekey', source)
-                    source = source + ".enc"
                     self.machine.modified(source)

@@ -5,7 +5,6 @@ import sys
 import threading
 
 import moveMessage
-import fileCrypto
 
 from binascii import crc32
 import os, json, pprint
@@ -264,8 +263,6 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
                 # print 'user_address is ' + user_address
                 self.factory.sendToMachines(user_address, self.outfilename)
-                if ".enc" in self.outfilename:
-                    fileCrypto.decrypt_file('somekey', self.outfilename)
                 # print '\n--> finished saving upload@' + self.outfilename
 
                 #self.factory.testSendMachines(user_address)
@@ -356,9 +353,6 @@ class FileIOClientFactory(ClientFactory):
         """ """
         # print 'in FileIOClientFactory class'
         self.path = path
-        if ".enc" not in self.path and not os.path.isdir(self.path):
-            fileCrypto.encrypt_file('somekey', self.path)
-            self.path = self.path + ".enc"
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
@@ -377,9 +371,6 @@ class FileIOClientFactory(ClientFactory):
 
 def transmitOne(path, address, port=1235,):
     """ helper for file transmission """
-    if ".enc" not in path and not os.path.isdir(path):
-        fileCrypto.encrypt_file('somekey', path)
-        path = path + ".enc"
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
     reactor.connectTCP(address, port, f)
@@ -419,7 +410,7 @@ class FileIOServerFactory(ServerFactory):
                         transmitOne(filepath,machine.ipAddress,self.send_port)
                     else:
                         machine.syncQueue.put(filepath)
-        os.remove(filepath)
+
 
     def sendMessageToMachines(self, address, filepath):
         username = self.retrieveUser(address)
@@ -486,9 +477,6 @@ class FileIOServerFactory(ServerFactory):
                 machine.update = True
 
     def send_file(self, filePath, address):
-        if ".enc" not in filePath:
-            fileCrypto.encrypt_file('somekey', filePath)
-            filePath = filePath + ".enc"
         port = self.send_port
         controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
         f = FileIOClientFactory(filePath, controller)
