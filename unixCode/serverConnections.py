@@ -46,22 +46,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         currentTime = int(time.time())
 
-        machineTime = 0
+        self.factory.setMachineTimes(currentTime, self.transport.getPeer().host)
 
-        for username in self.usersToLM:
-            for machine in self.usersToLM[username]:
-                if machine.ipAddress == self.transport.getPeer().host:
-                    machineTime = machine.lastUpdateTime
-
-        if machineTime == 0 or (currentTime - machineTime) < 3:
-            self.timeOut = True
-            self.transport.loseConnection()
-            return
-
-        for username in self.usersToLM:
-            for machine in self.usersToLM[username]:
-                if machine.ipAddress == self.transport.getPeer().host:
-                    machine.lastUpdateTime = currentTime
 
         self.isFile = True
         self.isSyncChange = False
@@ -240,17 +226,14 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         #self.factory.log.add("Connection lost for user " + clientUsername)
 
-        if self.timeOut:
-            print "connection lost"
-
-        if self.isFile == False and self.timeOut == False:
+        if self.isFile == False:
             print 'connection lost'
             if self.isSyncChange or self.Failure:
                 print 'connection Lost'
             else:
                 user_address = self.transport.getPeer().host
                 self.factory.sendToMachines(user_address, self.outfilename)
-        if self.isFile == True and self.timeOut == False:
+        if self.isFile == True:
             #self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             print ' - connectionLost'
@@ -418,10 +401,11 @@ class FileIOServerFactory(ServerFactory):
         for machine in self.usersToLM[username]:
             if machine.ipAddress != address:
                 #print 'address is ', address
-                if machine.syncState:
-                    transmitOne(filepath,machine.ipAddress,self.send_port)
-                else:
-                    machine.syncQueue.put(filepath)
+                if machine.update:
+                    if machine.syncState:
+                        transmitOne(filepath,machine.ipAddress,self.send_port)
+                    else:
+                        machine.syncQueue.put(filepath)
 
     def retrieveUser(self, address):
         for username in self.usersToLM:
@@ -448,6 +432,20 @@ class FileIOServerFactory(ServerFactory):
             for machine in self.usersToLM[username]:
                 if machine.ipAddress == address:
                     return machine.pathToDirectory
+
+    def setMachineTimes(self, time, address):
+        currentUser = 'test'
+        for username in self.usersToLM:
+            for machine in self.usersToLM[username]:
+                if machine.ipAddress == address:
+                    currentUser = username
+                    machine.lastUpdateTime = time
+                    machine.update = False
+        for machine in self.usersToLM[currentUser]:
+            if (time - machine.lastUpdateTime) < 3:
+                machine.update = False
+            else:
+                machine.update = True
 
     def send_file(self, filePath, address):
         port = self.send_port

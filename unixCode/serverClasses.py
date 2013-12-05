@@ -19,6 +19,7 @@ class BabyLocalMachine():
         self.syncState = True
         self.syncQueue = Queue.Queue(100)
         self.lastUpdateTime = 0
+        self.update = True
 
 class ThreadedTCPServer(SocketServer.ThreadingTCPServer):
 
