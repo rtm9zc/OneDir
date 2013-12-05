@@ -419,6 +419,7 @@ class FileIOServerFactory(ServerFactory):
                         transmitOne(filepath,machine.ipAddress,self.send_port)
                     else:
                         machine.syncQueue.put(filepath)
+        os.remove(filepath)
 
     def sendMessageToMachines(self, address, filepath):
         username = self.retrieveUser(address)
