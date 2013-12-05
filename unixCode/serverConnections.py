@@ -61,7 +61,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
 
         if line == 'syncOn':
-            #self.factory.log.add(clientUsername + ": Sync is now on")
+            self.factory.log.add(clientUsername + ": Sync is now on")
             self.factory.setSyncMachine(self.transport.getPeer().host, True)
             self.isFile = False
             self.isSyncChange = True
@@ -103,7 +103,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 self.transport.loseConnection()
                 return
             self.isFile = False
-            #self.factory.log.add("File modifications for user " + clientUsername)
+            self.factory.log.add("File modifications for user " + clientUsername)
             self.outfilename = 'delete' + pathToDelete
 
 
@@ -219,7 +219,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
     def connectionMade(self):
         """ """
-        #self.log("Connection made...")
+        self.log("Connection made...")
         basic.LineReceiver.connectionMade(self)
         # print '\n + a connection was made'
         # print ' * ',self.transport.getPeer()
@@ -228,7 +228,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
 
-        #self.factory.log.add("Connection lost for user " + clientUsername)
+        self.factory.log.add("Connection lost for user " + clientUsername)
 
         if self.isFile == False:
             # print 'connection lost'
@@ -240,7 +240,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 user_address = self.transport.getPeer().host
                 self.factory.sendMessageToMachines(user_address, self.outfilename)
         if self.isFile == True:
-            #self.factory.log.add("File modifications for user " + clientUsername)
+            self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
             # print ' - connectionLost'
             if self.outfile:
@@ -398,7 +398,7 @@ class FileIOServerFactory(ServerFactory):
         adminMachine = BabyLocalMachine("admin", "1", "randomIP", "path")
         self.usersToLM = {"admin": [adminMachine]}
 
-        #self.log = adminLog()
+        self.log = adminLog()
 
 
     def sendToMachines(self, address, filepath):

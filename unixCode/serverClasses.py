@@ -1,7 +1,7 @@
 import os
 import SocketServer
 import shutil
-#import logHandler
+import logHandler
 
 import Queue
 
@@ -122,8 +122,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
         if correctUserandPW == "True" and isAdminUser == "False":
             #logs that user logged in correctly
-            #log = logHandler.adminLog();
-            #self.server.twisted_server.log.add("User is successfully logging in...")
+            log = logHandler.adminLog();
+            self.server.twisted_server.log.add("User is successfully logging in...")
 
             self.macAddress = self.request.recv(1024).strip()
             self.macAddress = str(self.macAddress)
@@ -153,8 +153,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                             lm.syncQueue.put(fullFile)
 
         if isAdminUser == "True" and correctUserandPW == "True":
-            #log = logHandler.adminLog();
-            #self.server.twisted_server.log.add("Admin is successfully logging in...")
+            log = logHandler.adminLog();
+            self.server.twisted_server.log.add("Admin is successfully logging in...")
 
             self.adminUserRequest = "1"
 
@@ -216,7 +216,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     self.request.sendall(trueResponse + "\n")
                 if (self.adminUserRequest == "7"):
                     #get history of connections involving synchronization stored as a string and put into self.adminResults
-                    # with open ("log.txt", "r") as myfile:
-                    #     #adminResults=myfile.read().replace('\n', '')
-                    #     adminResults=myfile.read()
+                    with open ("log.txt", "r") as myfile:
+                        #adminResults=myfile.read().replace('\n', '')
+                        adminResults=myfile.read()
                     self.request.sendall(adminResults + "\n")
