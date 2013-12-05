@@ -4,6 +4,8 @@ import sys
 
 import threading
 
+import moveMessage
+
 from binascii import crc32
 import os, json, pprint
 
@@ -232,7 +234,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 print 'connection Lost'
             else:
                 user_address = self.transport.getPeer().host
-                self.factory.sendToMachines(user_address, self.outfilename)
+                self.factory.sendMessageToMachines(user_address, self.outfilename)
         if self.isFile == True:
             #self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
@@ -407,6 +409,17 @@ class FileIOServerFactory(ServerFactory):
                     else:
                         machine.syncQueue.put(filepath)
 
+    def sendMessageToMachines(self, address, filepath):
+        username = self.retrieveUser(address)
+        for machine in self.usersToLM[username]:
+            if machine.ipAddress != address:
+                #print 'address is ', address
+                if machine.update:
+                    if machine.syncState:
+                        moveMessage.sendMessage(filepath,machine.ipAddress,self.send_port)
+                    else:
+                        machine.syncQueue.put(filepath)
+
     def retrieveUser(self, address):
         for username in self.usersToLM:
             for machine in self.usersToLM[username]:
@@ -425,7 +438,10 @@ class FileIOServerFactory(ServerFactory):
                 if machine.ipAddress == address:
                     while not machine.syncQueue.empty():
                         message = machine.syncQueue.get()
-                        transmitOne(message, address, self.send_port)
+                        if os.path.exists(message):
+                            transmitOne(message, address, self.send_port)
+                        else:
+                            moveMessage.sendMessage(message, address, self.send_port)
 
     def retrieveFilePath(self, address):
         for username in self.usersToLM:
