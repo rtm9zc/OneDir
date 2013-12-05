@@ -54,6 +54,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
         self.isFile = True
         self.isSyncChange = False
         self.Failure = False
+        self.syncChangeToOn = False
 
         # get username via ip address
         clientUsername = self.factory.retrieveUser(self.transport.getPeer().host)
@@ -64,8 +65,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
             self.factory.setSyncMachine(self.transport.getPeer().host, True)
             self.isFile = False
             self.isSyncChange = True
+            self.syncChangeToOn = True
 
-            self.factory.clearSyncQueue(self.transport.getPeer().host)
+            #self.factory.clearSyncQueue(self.transport.getPeer().host)
 
             #print self.factory.usersToLM
             self.transport.loseConnection()
@@ -232,6 +234,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
             print 'connection lost'
             if self.isSyncChange or self.Failure:
                 print 'connection Lost'
+                if self.syncChangeToOn:
+                    self.factory.clearSyncQueue(self.transport.getPeer().host)
             else:
                 user_address = self.transport.getPeer().host
                 self.factory.sendMessageToMachines(user_address, self.outfilename)
