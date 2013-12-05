@@ -442,10 +442,13 @@ class FileIOServerFactory(ServerFactory):
                 if machine.ipAddress == address:
                     while not machine.syncQueue.empty():
                         message = machine.syncQueue.get()
-                        if os.path.exists(message):
-                            transmitOne(message, address, self.send_port)
-                        else:
-                            moveMessage.sendMessage(message, address, self.send_port)
+                        print "file/message is ", message
+                        print "address is ", address
+                        print "port is ", self.send_port
+                        # if os.path.exists(message):
+                        #     transmitOne(message, address, self.send_port)
+                        # else:
+                        #     moveMessage.sendMessage(message, address, self.send_port)
 
     def retrieveFilePath(self, address):
         for username in self.usersToLM:
