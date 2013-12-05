@@ -30,6 +30,7 @@ class ClientReceiverProtocol(basic.LineReceiver):
         self.outfile = None
         self.remain = 0
         self.crc = 0
+        self.isFile = True
 
     def jsonStuff(self,line):
         self.instruction = json.loads(line)
