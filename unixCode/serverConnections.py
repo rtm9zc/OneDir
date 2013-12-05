@@ -263,11 +263,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 user_address = self.transport.getPeer().host
 
                 # print 'user_address is ' + user_address
+                self.factory.sendToMachines(user_address, self.outfilename)
                 if ".enc" in self.outfilename:
                     fileCrypto.decrypt_file('somekey', self.outfilename)
-
-                self.factory.sendToMachines(user_address, self.outfilename)
-                os.remove(self.outfilename)
                 # print '\n--> finished saving upload@' + self.outfilename
 
                 #self.factory.testSendMachines(user_address)

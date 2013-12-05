@@ -161,7 +161,6 @@ class ClientReceiverProtocol(basic.LineReceiver):
             else:
                 if ".enc" in self.outfilename:
                     fileCrypto.decrypt_file('somekey', self.outfilename)
-                    os.remove(self.outfilename)
         # Else: Success uploading - tmpfile will be saved to disk.
         # else:
         #     #print '\n--> finished saving upload@' + self.outfilename
