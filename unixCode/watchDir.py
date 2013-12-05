@@ -38,9 +38,9 @@ class OneDirHandler(FileSystemEventHandler):
         dest = event.dest_path
 
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
-            print("File moved! (" + source + " at time: " +
-            time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
-            print("Destination: " + dest)
+            # print("File moved! (" + source + " at time: " +
+            #time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
+            # print("Destination: " + dest)
             if not event.is_directory:
                 if getExtension(source) != '.DS_Store' and os.path.basename(source)[0] != '.':
                     self.machine.moved(source, dest)
@@ -61,8 +61,8 @@ class OneDirHandler(FileSystemEventHandler):
         #Should send file over to server
         source = event.src_path
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
-            print("File created! (" + source + " at time: " +
-            time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
+            # print("File created! (" + source + " at time: " +
+            # time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
                 if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
                     self.machine.created(source)
@@ -75,8 +75,8 @@ class OneDirHandler(FileSystemEventHandler):
         #Server should delete same file
         source = event.src_path
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
-            print("File deleted! (" + source + " at time: " +
-            time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
+            # print("File deleted! (" + source + " at time: " +
+            # time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
                 if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
                     self.machine.deleted(source)
@@ -87,8 +87,8 @@ class OneDirHandler(FileSystemEventHandler):
     def on_modified(self, event):
         source = event.src_path
         if source.find(".goutputstream") == -1 and source[len(source)-1] != '~':
-            print("File modified! (" + source + " at time: " +
-            time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
+            # print("File modified! (" + source + " at time: " +
+            #time.strftime("%Y-%m-%d %H:%M:%S")+ ")")
             if not event.is_directory:
                 if getExtension(source) != '.DS_Store' and getExtension(source) != '.tmp' and os.path.basename(source)[0] != '.':
                     self.machine.modified(source)

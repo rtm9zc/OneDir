@@ -15,7 +15,7 @@ class FileIOClient(basic.LineReceiver):
 
     def __init__(self, path, controller):
         """ """
-        print "in FileIOClient"
+        # print "in FileIOClient"
 
         self.path = path
         self.controller = controller
@@ -37,7 +37,7 @@ class FileIOClient(basic.LineReceiver):
         # Check with controller to see if we've been cancelled and abort
         # if so.
         if self.controller.cancel:
-            print 'FileIOClient._monitor Cancelling'
+            # print 'FileIOClient._monitor Cancelling'
 
             # Need to unregister the producer with the transport or it will
             # wait for it to finish before breaking the connection
@@ -72,8 +72,8 @@ class FileIOClient(basic.LineReceiver):
         """
         from twisted.internet.error import ConnectionDone
         basic.LineReceiver.connectionLost(self, reason)
-        print ' - connectionLost\n  * ', reason.getErrorMessage()
-        print ' * finished with',self.path
+        # print ' - connectionLost\n  * ', reason.getErrorMessage()
+        # print ' * finished with',self.path
         self.infile.close()
         if self.completed:
             self.controller.completed.callback(self.result)
@@ -88,20 +88,20 @@ class FileIOClientFactory(ClientFactory):
 
     def __init__(self, path, controller):
         """ """
-        print 'in FileIOClientFactory class'
+        # print 'in FileIOClientFactory class'
         self.path = path
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
         """ """
-        print 'client connection failed'
+        # print 'client connection failed'
         ClientFactory.clientConnectionFailed(self, connector, reason)
         self.controller.completed.errback(reason)
         #print "end ?"
 
     def buildProtocol(self, addr):
         """ """
-        print ' + building protocol'
+        # print ' + building protocol'
         p = self.protocol(self.path, self.controller)
         p.factory = self
         return p

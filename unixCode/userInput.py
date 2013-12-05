@@ -97,10 +97,10 @@ def adminInput():
             #adminSock.connect((HOST, PORT))
 
             sock.sendall(adminChoiceNum + "\n")
-            print "sent"
+            #print "sent"
             adminResults = sock.recv(65536)
             #adminResults = sock.recv()
-            print "received"
+            #print "received"
             adminResults = str(adminResults).strip()
 
             if adminChoiceNum == "3":

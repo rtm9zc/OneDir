@@ -97,7 +97,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                 correctUserandPW = "Invalid"
             else:
                 self.server.twisted_server.usersToPW[self.username] = self.password
-                print self.server.twisted_server.usersToPW
+                #print self.server.twisted_server.usersToPW
                 self.server.twisted_server.usersToLM[self.username] = []
 
         if correctUserandPW != "Invalid":
@@ -114,7 +114,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
             self.newPW = str(self.newPW)
             if self.newPW != "N":
                 self.server.twisted_server.usersToPW[self.username] = self.newPW
-                print self.server.twisted_server.usersToPW
+                #print self.server.twisted_server.usersToPW
 
             booleanVal = "True"
             self.request.sendall(booleanVal + "\n")
@@ -200,8 +200,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     usernameToDelete = str(usernameToDelete)
                     del self.server.twisted_server.usersToPW[usernameToDelete]
                     del self.server.twisted_server.usersToLM[usernameToDelete]
-                    print str(self.server.twisted_server.usersToPW)
-                    print str(self.server.twisted_server.usersToLM)
+                    #print str(self.server.twisted_server.usersToPW)
+                    #print str(self.server.twisted_server.usersToLM)
                     self.request.sendall(trueResponse + "\n")
                 if (self.adminUserRequest == "6"):
                     self.request.sendall(trueResponse + "\n")
@@ -212,7 +212,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     passwordToChange = self.request.recv(1024).strip()
                     passwordToChange = str(passwordToChange)
                     self.server.twisted_server.usersToPW[usernameToChangePW] = passwordToChange
-                    print str(self.server.twisted_server.usersToPW)
+                    #print str(self.server.twisted_server.usersToPW)
                     self.request.sendall(trueResponse + "\n")
                 if (self.adminUserRequest == "7"):
                     #get history of connections involving synchronization stored as a string and put into self.adminResults

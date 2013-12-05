@@ -42,7 +42,7 @@ class ClientReceiverProtocol(basic.LineReceiver):
 
     def lineReceived(self, line):
         """ """
-        print ' ~ lineReceived:\n\t', line
+        # print ' ~ lineReceived:\n\t', line
 
         self.isFile = True
 
@@ -108,29 +108,29 @@ class ClientReceiverProtocol(basic.LineReceiver):
 
         # Create the upload directory if not already present
 
-        print " * Using upload dir:",uploaddir
+        # print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
 
         self.outfilename = os.path.join(uploaddir, os.path.basename(self.original_fname))
 
-        print ' * Receiving into file@',self.outfilename
+        # print ' * Receiving into file@',self.outfilename
         try:
             self.outfile = open(self.outfilename,'wb')
         except Exception, value:
-            print ' ! Unable to open file', self.outfilename, value
+            # print ' ! Unable to open file', self.outfilename, value
             self.transport.loseConnection()
             return
 
         self.remain = int(self.size)
-        print ' & Entering raw mode.',self.outfile, self.remain
+        # print ' & Entering raw mode.',self.outfile, self.remain
         self.setRawMode()
 
 
     def rawDataReceived(self, data):
         """ """
-        if self.remain%10000==0:
-            print '   & ',self.remain,'/',self.size
+        # if self.remain%10000==0:
+        #     print '   & ',self.remain,'/',self.size
         self.remain -= len(data)
 
         self.crc = crc32(data, self.crc)
@@ -155,13 +155,13 @@ class ClientReceiverProtocol(basic.LineReceiver):
                     reason = ' .. file moved too much'
                 if self.remain>0:
                     reason = ' .. file moved too little'
-                print remove_base + self.outfilename + reason
+                #print remove_base + self.outfilename + reason
                 os.remove(self.outfilename)
 
         # Else: Success uploading - tmpfile will be saved to disk.
-        else:
-            #print '\n--> finished saving upload@' + self.outfilename
-            print 'finished saving upload'
+        # else:
+        #     #print '\n--> finished saving upload@' + self.outfilename
+        #     print 'finished saving upload'
 
 
 def fileinfo(fname):

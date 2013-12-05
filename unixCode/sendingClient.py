@@ -20,13 +20,13 @@ class LocalMachine():
 
     def transmitFile(self, source):
         sendFile.sendFile(source,self.address,self.port)
-        print 'Dialing on port',self.port,'..'
+        # print 'Dialing on port',self.port,'..'
         reactor.run(installSignalHandlers=0)
 
     def transmitDelete(self, source):
         filePath = 'delete' + source
         moveMessage.sendMessage(filePath,self.address,self.port)
-        print 'Dialing on port',self.port,'..'
+        # print 'Dialing on port',self.port,'..'
         reactor.run(installSignalHandlers=0)
 
     def getUsername(self):

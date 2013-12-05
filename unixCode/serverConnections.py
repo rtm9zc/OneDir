@@ -42,7 +42,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
     def lineReceived(self, line):
         """ """
-        print ' ~ lineReceived:\n\t', line
+        # print ' ~ lineReceived:\n\t', line
 
         self.timeOut = False
 
@@ -67,7 +67,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
             self.isSyncChange = True
             self.syncChangeToOn = True
 
-            #self.factory.clearSyncQueue(self.transport.getPeer().host)
+            self.factory.clearSyncQueue(self.transport.getPeer().host, clientUsername)
 
             #print self.factory.usersToLM
             self.transport.loseConnection()
@@ -175,7 +175,7 @@ class ServerReceiverProtocol(basic.LineReceiver):
                                                    'not given by client')
 
 
-        print " * Using upload dir:",uploaddir
+        # print " * Using upload dir:",uploaddir
         if not os.path.isdir(uploaddir):
             os.makedirs(uploaddir)
 
@@ -196,22 +196,22 @@ class ServerReceiverProtocol(basic.LineReceiver):
         if not os.path.isdir(fullUploadDir):
             os.makedirs(fullUploadDir)
 
-        print ' * Receiving into file@',self.outfilename
+        # print ' * Receiving into file@',self.outfilename
         try:
             self.outfile = open(self.outfilename,'wb')
         except Exception, value:
-            print ' ! Unable to open file', self.outfilename, value
+            # print ' ! Unable to open file', self.outfilename, value
             self.transport.loseConnection()
             return
 
         self.remain = int(self.size)
-        print ' & Entering raw mode.',self.outfile, self.remain
+        # print ' & Entering raw mode.',self.outfile, self.remain
         self.setRawMode()
 
     def rawDataReceived(self, data):
         """ """
-        if self.remain%10000==0:
-            print '   & ',self.remain,'/',self.size
+        #if self.remain%10000==0:
+            # print '   & ',self.remain,'/',self.size
         self.remain -= len(data)
 
         self.crc = crc32(data, self.crc)
@@ -221,8 +221,8 @@ class ServerReceiverProtocol(basic.LineReceiver):
         """ """
         #self.log("Connection made...")
         basic.LineReceiver.connectionMade(self)
-        print '\n + a connection was made'
-        print ' * ',self.transport.getPeer()
+        # print '\n + a connection was made'
+        # print ' * ',self.transport.getPeer()
 
     def connectionLost(self, reason):
 
@@ -231,29 +231,29 @@ class ServerReceiverProtocol(basic.LineReceiver):
         #self.factory.log.add("Connection lost for user " + clientUsername)
 
         if self.isFile == False:
-            print 'connection lost'
+            # print 'connection lost'
             if self.isSyncChange or self.Failure:
-                print 'connection Lost'
+                # print 'connection Lost'
                 if self.syncChangeToOn:
-                    self.factory.clearSyncQueue(self.transport.getPeer().host)
+                    self.factory.clearSyncQueue(self.transport.getPeer().host, clientUsername)
             else:
                 user_address = self.transport.getPeer().host
                 self.factory.sendMessageToMachines(user_address, self.outfilename)
         if self.isFile == True:
             #self.factory.log.add("File modifications for user " + clientUsername)
             basic.LineReceiver.connectionLost(self, reason)
-            print ' - connectionLost'
+            # print ' - connectionLost'
             if self.outfile:
                 self.outfile.close()
                 # Problem uploading - tmpfile will be discarded
             if self.remain != 0:
-                print str(self.remain) + ')!=0'
+                # print str(self.remain) + ')!=0'
                 remove_base = '--> removing tmpfile@'
                 if self.remain<0:
                     reason = ' .. file moved too much'
                 if self.remain>0:
                     reason = ' .. file moved too little'
-                print remove_base + self.outfilename + reason
+                # print remove_base + self.outfilename + reason
                 os.remove(self.outfilename)
 
             # Success uploading - tmpfile will be saved to disk.
@@ -261,11 +261,11 @@ class ServerReceiverProtocol(basic.LineReceiver):
 
                 user_address = self.transport.getPeer().host
 
-                print 'user_address is ' + user_address
+                # print 'user_address is ' + user_address
 
                 self.factory.sendToMachines(user_address, self.outfilename)
 
-                print '\n--> finished saving upload@' + self.outfilename
+                # print '\n--> finished saving upload@' + self.outfilename
 
                 #self.factory.testSendMachines(user_address)
 
@@ -280,7 +280,7 @@ class FileIOClient(basic.LineReceiver):
 
     def __init__(self, path, controller):
         """ """
-        print "in FileIOClient"
+        # print "in FileIOClient"
 
         self.path = path
         self.controller = controller
@@ -302,7 +302,7 @@ class FileIOClient(basic.LineReceiver):
         # Check with controller to see if we've been cancelled and abort
         # if so.
         if self.controller.cancel:
-            print 'FileIOClient._monitor Cancelling'
+            # print 'FileIOClient._monitor Cancelling'
 
             # Need to unregister the producer with the transport or it will
             # wait for it to finish before breaking the connection
@@ -324,7 +324,6 @@ class FileIOClient(basic.LineReceiver):
         instruction = dict(file_size=self.insize,
                            original_file_path=self.path)
         instruction = json.dumps(instruction)
-        print "test"
         self.transport.write(instruction+'\r\n')
         sender = FileSender()
         sender.CHUNK_SIZE = 2 ** 16
@@ -338,8 +337,8 @@ class FileIOClient(basic.LineReceiver):
         """
         from twisted.internet.error import ConnectionDone
         basic.LineReceiver.connectionLost(self, reason)
-        print ' - connectionLost\n  * ', reason.getErrorMessage()
-        print ' * finished with',self.path
+        # print ' - connectionLost\n  * ', reason.getErrorMessage()
+        # print ' * finished with',self.path
         self.infile.close()
         if self.completed:
             self.controller.completed.callback(self.result)
@@ -353,19 +352,19 @@ class FileIOClientFactory(ClientFactory):
 
     def __init__(self, path, controller):
         """ """
-        print 'in FileIOClientFactory class'
+        # print 'in FileIOClientFactory class'
         self.path = path
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
         """ """
-        print 'client connection failed'
+        # print 'client connection failed'
         ClientFactory.clientConnectionFailed(self, connector, reason)
         self.controller.completed.errback(reason)
 
     def buildProtocol(self, addr):
         """ """
-        print ' + building protocol'
+        # print ' + building protocol'
         p = self.protocol(self.path, self.controller)
         p.factory = self
         return p
@@ -436,19 +435,26 @@ class FileIOServerFactory(ServerFactory):
                 if machine.ipAddress == address:
                     machine.syncState = syncOn
 
-    def clearSyncQueue(self, address):
-        for username in self.usersToLM:
-            for machine in self.usersToLM[username]:
-                if machine.ipAddress == address:
-                    while not machine.syncQueue.empty():
-                        message = machine.syncQueue.get()
-                        print "file/message is ", message
-                        print "address is ", address
-                        print "port is ", self.send_port
-                        # if os.path.exists(message):
-                        #     transmitOne(message, address, self.send_port)
-                        # else:
-                        #     moveMessage.sendMessage(message, address, self.send_port)
+    def clearSyncQueue(self, address, username):
+        # for username in self.usersToLM:
+        #     for machine in self.usersToLM[username]:
+        #         if machine.ipAddress == address:
+        #             while not machine.syncQueue.empty():
+        #                 message = machine.syncQueue.get()
+        #                 print "file/message is ", message
+        #                 print "address is ", address
+        #                 print "port is ", self.send_port
+        #                 # if os.path.exists(message):
+        #                 #     transmitOne(message, address, self.send_port)
+        #                 # else:
+        #                 #     moveMessage.sendMessage(message, address, self.send_port)
+        print "clear SyncQueue"
+        for root, dirs, files in os.walk(os.path.join(self.dir_path, username)):
+            for filename in files:
+
+                fullFilePath = os.path.join(root, filename)
+                transmitOne(fullFilePath,address,self.send_port)
+
 
     def retrieveFilePath(self, address):
         for username in self.usersToLM:
@@ -483,8 +489,8 @@ if __name__ == "__main__":
     #HOST, PORT = str(sys.argv[1]), 9999
     HOST, PORT = '', 9999
 
-    print HOST
-    print PORT
+    # print HOST
+    # print PORT
 
     twisted_server = FileIOServerFactory(str(sys.argv[2]))
 
@@ -495,5 +501,5 @@ if __name__ == "__main__":
     server_thread.start()
 
     reactor.listenTCP(twisted_server.listen_port,twisted_server)
-    print 'Listening on port',twisted_server.listen_port,'..'
+    # print 'Listening on port',twisted_server.listen_port,'..'
     reactor.run()
