@@ -376,7 +376,7 @@ class FileIOClientFactory(ClientFactory):
 
 def transmitOne(path, address, port=1235,):
     """ helper for file transmission """
-    if ".enc" not in path:
+    if ".enc" not in path and not os.path.isdir(path):
         fileCrypto.encrypt_file('somekey', path)
         path = path + ".enc"
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
