@@ -5,6 +5,7 @@ import os
 import json
 import pprint
 import shutil
+import fileCrypto
 
 from twisted.protocols import basic
 from twisted.internet.protocol import ServerFactory
@@ -157,7 +158,10 @@ class ClientReceiverProtocol(basic.LineReceiver):
                     reason = ' .. file moved too little'
                 #print remove_base + self.outfilename + reason
                 os.remove(self.outfilename)
-
+            else:
+                if ".enc" in self.outfilename:
+                    fileCrypto.decrypt_file('somekey', self.outfilename)
+                    os.remove(self.outfilename)
         # Else: Success uploading - tmpfile will be saved to disk.
         # else:
         #     #print '\n--> finished saving upload@' + self.outfilename
@@ -242,6 +246,9 @@ class FileIOClientFactory(ClientFactory):
 
     def __init__(self, path, controller):
         self.path = path
+        if ".enc" not in path:
+            fileCrypto.encrypt_file('somekey', self.path)
+            self.path = self.path + ".enc"
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
@@ -256,6 +263,9 @@ class FileIOClientFactory(ClientFactory):
 
 def transmitOne(path, address='localhost', port=1234,):
     """ helper for file transmission """
+    if ".enc" not in path:
+        fileCrypto.encrypt_file('somekey', path)
+        path = path + ".enc"
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
     reactor.connectTCP(address, port, f)

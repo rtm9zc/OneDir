@@ -5,6 +5,7 @@ import sys
 import threading
 
 import moveMessage
+import fileCrypto
 
 from binascii import crc32
 import os, json, pprint
@@ -262,7 +263,9 @@ class ServerReceiverProtocol(basic.LineReceiver):
                 user_address = self.transport.getPeer().host
 
                 # print 'user_address is ' + user_address
-
+                if ".enc" in self.outfilename:
+                    fileCrypto.decrypt_file('somekey', self.outfilename)
+                    os.remove(self.outfilename)
                 self.factory.sendToMachines(user_address, self.outfilename)
 
                 # print '\n--> finished saving upload@' + self.outfilename
@@ -354,6 +357,7 @@ class FileIOClientFactory(ClientFactory):
         """ """
         # print 'in FileIOClientFactory class'
         self.path = path
+
         self.controller = controller
 
     def clientConnectionFailed(self, connector, reason):
@@ -372,6 +376,9 @@ class FileIOClientFactory(ClientFactory):
 
 def transmitOne(path, address, port=1235,):
     """ helper for file transmission """
+    if ".enc" not in path:
+        fileCrypto.encrypt_file('somekey', path)
+        path = path + ".enc"
     controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
     f = FileIOClientFactory(path, controller)
     reactor.connectTCP(address, port, f)
@@ -477,6 +484,9 @@ class FileIOServerFactory(ServerFactory):
                 machine.update = True
 
     def send_file(self, filePath, address):
+        if ".enc" not in filePath:
+            fileCrypto.encrypt_file('somekey', filePath)
+            filePath = filePath + ".enc"
         port = self.send_port
         controller = type('test',(object,),{'cancel':False, 'total_sent':0,'completed':Deferred()})
         f = FileIOClientFactory(filePath, controller)
